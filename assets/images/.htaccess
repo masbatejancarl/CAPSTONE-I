@@ -1,0 +1,3 @@
+# .jfif is a JPEG variant not in Apache's default mime.types — map it
+# explicitly so images are served with the correct Content-Type header.
+AddType image/jpeg .jfif

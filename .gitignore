@@ -1,0 +1,10 @@
+# Local credentials — never commit real secrets
+config/db.local.php
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# OS/editor junk
+.DS_Store
+Thumbs.db
+*.log
