@@ -8,7 +8,7 @@
         <h1 class="sb-split-tagline">Hear the world,<br>feel every sound.</h1>
         <p class="sb-split-desc">
             A wearable sound-alert companion designed for the hearing-impaired
-            community — turning critical sounds into alerts you can feel and see.
+            community turning critical sounds into alerts you can feel and see.
         </p>
 
         <ul class="sb-split-features">

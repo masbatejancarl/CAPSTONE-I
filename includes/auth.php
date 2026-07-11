@@ -105,6 +105,25 @@ function logAuditEvent(?int $userId, string $name, string $email, string $role, 
     $stmt->execute([$userId, $name, $email, $role, $action, $ip]);
 }
 
+// Reads the left/right/both mic direction out of an alert row's `metadata` column.
+// Accepts either a JSON object like {"direction":"left"} or a bare "left"/"right"/"both" string,
+// since different producers (ESP32 firmware, the React app) have written it either way.
+function alertDirection(?string $metadataValue): ?string {
+    if (!$metadataValue) return null;
+    $meta = json_decode($metadataValue, true);
+    $dir  = is_array($meta) ? ($meta['direction'] ?? null) : trim($metadataValue);
+    return in_array($dir, ['left', 'right', 'both'], true) ? $dir : null;
+}
+
+function directionIcon(?string $direction): string {
+    return match ($direction) {
+        'left'  => 'bi-arrow-left-circle-fill',
+        'right' => 'bi-arrow-right-circle-fill',
+        'both'  => 'bi-arrows-angle-expand',
+        default => '',
+    };
+}
+
 function redirectByRole() {
     switch ($_SESSION['role']) {
         case 'admin':     header('Location: ' . BASE_URL . '/admin/dashboard.php'); break;

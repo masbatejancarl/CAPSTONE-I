@@ -20,7 +20,8 @@ CREATE TABLE IF NOT EXISTS alerts (
                    CHECK (location IN ('indoor', 'outdoor')),
     status         VARCHAR(10) DEFAULT 'unread'
                    CHECK (status IN ('unread', 'read')),
-    detected_at    TIMESTAMP DEFAULT NOW()
+    detected_at    TIMESTAMP DEFAULT NOW(),
+    metadata       TEXT
 );
 
 -- Links a caregiver account to the hearing-impaired user(s) they monitor.
@@ -38,7 +39,7 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     user_name   VARCHAR(100),
     user_email  VARCHAR(100),
     role        VARCHAR(20),
-    action      VARCHAR(20) NOT NULL CHECK (action IN ('login', 'logout', 'login_failed')),
+    action      VARCHAR(20) NOT NULL CHECK (action IN ('login', 'logout', 'login_failed', 'password_reset')),
     ip_address  VARCHAR(45),
     created_at  TIMESTAMP DEFAULT NOW()
 );

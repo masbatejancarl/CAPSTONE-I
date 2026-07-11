@@ -228,8 +228,10 @@ $soundIcons = [
             $lastDate  = null;
         ?>
         <?php foreach ($alerts as $row):
-            $meta    = $soundIcons[$row['sound_type']] ?? ['bi-volume-up-fill', 'sound-default'];
-            $rowDate = date('Y-m-d', strtotime($row['detected_at']));
+            $meta      = $soundIcons[$row['sound_type']] ?? ['bi-volume-up-fill', 'sound-default'];
+            $direction = alertDirection($row['metadata'] ?? null);
+            $soundName = $row['sound_type'] ?: 'Sound Detected';
+            $rowDate   = date('Y-m-d', strtotime($row['detected_at']));
 
             if ($rowDate !== $lastDate):
                 if ($lastDate !== null) echo '</div>'; // close previous .sb-timeline-group
@@ -248,7 +250,7 @@ $soundIcons = [
                 </div>
                 <div class="sb-timeline-content">
                     <div class="sb-timeline-row1">
-                        <span class="sb-timeline-title"><?= htmlspecialchars($row['sound_type']) ?></span>
+                        <span class="sb-timeline-title"><?= htmlspecialchars($soundName) ?></span>
                         <span class="sb-status <?= $row['status'] ?>"><?= ucfirst($row['status']) ?></span>
                     </div>
                     <div class="sb-timeline-meta">
@@ -257,8 +259,13 @@ $soundIcons = [
                             <?= htmlspecialchars($row['patient_name']) ?>
                         </span>
                         <span><i class="bi bi-clock"></i> <?= date('h:i A', strtotime($row['detected_at'])) ?></span>
+                        <?php if ($row['location']): ?>
                         <span><i class="bi bi-<?= $row['location'] === 'indoor' ? 'house' : 'tree' ?>"></i> <?= ucfirst($row['location']) ?></span>
+                        <?php endif; ?>
                         <span><i class="bi bi-soundwave"></i> <?= $row['decibel_level'] ? number_format($row['decibel_level'], 1) . ' dB' : '—' ?></span>
+                        <?php if ($direction): ?>
+                        <span><i class="bi <?= directionIcon($direction) ?>"></i> <?= $direction === 'both' ? 'Both sides' : ucfirst($direction) ?></span>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>

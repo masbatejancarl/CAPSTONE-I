@@ -15,9 +15,11 @@ if (!$id) { http_response_code(400); echo json_encode(['error' => 'Missing id'])
 
 // Admin can mark any; user can only mark their own
 if ($role === 'admin') {
-    db()->exec("UPDATE alerts SET status='read' WHERE id=$id");
+    $stmt = db()->prepare("UPDATE alerts SET status='read' WHERE id=?");
+    $stmt->execute([$id]);
 } else {
-    db()->exec("UPDATE alerts SET status='read' WHERE id=$id AND user_id=$uid");
+    $stmt = db()->prepare("UPDATE alerts SET status='read' WHERE id=? AND user_id=?");
+    $stmt->execute([$id, $uid]);
 }
 
 echo json_encode(['success' => true]);

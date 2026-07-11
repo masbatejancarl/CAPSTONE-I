@@ -101,9 +101,10 @@ $dstmt->execute($params);
 $logs = $dstmt->fetchAll();
 
 $actionMeta = [
-    'login'        => ['bi-box-arrow-in-right', 'sound-doorbell', 'Login'],
-    'logout'       => ['bi-box-arrow-right',     'sound-default',  'Logout'],
-    'login_failed' => ['bi-shield-x',            'sound-alarm',    'Failed Login'],
+    'login'          => ['bi-box-arrow-in-right', 'sound-doorbell', 'Login'],
+    'logout'         => ['bi-box-arrow-right',     'sound-default',  'Logout'],
+    'login_failed'   => ['bi-shield-x',            'sound-alarm',    'Failed Login'],
+    'password_reset' => ['bi-key-fill',            'sound-vehicle',  'Password Reset'],
 ];
 ?>
 <!DOCTYPE html>
@@ -156,16 +157,17 @@ $actionMeta = [
                 <input type="text" name="search" class="form-control sb-input form-control-sm"
                        placeholder="Name or email…" value="<?= htmlspecialchars($search) ?>">
             </div>
-            <div class="col-6 col-md-1">
+            <div class="col-6 col-md-2">
                 <label class="sb-label">Action</label>
                 <select name="action" class="form-select sb-input form-select-sm">
                     <option value="">All</option>
                     <option value="login"        <?= $filterAction === 'login'        ? 'selected' : '' ?>>Login</option>
                     <option value="logout"       <?= $filterAction === 'logout'       ? 'selected' : '' ?>>Logout</option>
                     <option value="login_failed" <?= $filterAction === 'login_failed' ? 'selected' : '' ?>>Failed Login</option>
+                    <option value="password_reset" <?= $filterAction === 'password_reset' ? 'selected' : '' ?>>Password Reset</option>
                 </select>
             </div>
-            <div class="col-6 col-md-2">
+            <div class="col-6 col-md-1">
                 <label class="sb-label">Role</label>
                 <select name="role" class="form-select sb-input form-select-sm">
                     <option value="">All Roles</option>
