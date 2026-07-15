@@ -19,7 +19,13 @@ $patientIds = array_column($patients, 'id');
 $totalAlerts  = 0;
 $unreadAlerts = 0;
 $todayAlerts  = 0;
-$typeCounts   = [];
+
+$directionInfo = [
+    'left'    => ['Sound Detected Left',              'var(--info)'],
+    'right'   => ['Sound Detected Right',             'var(--warning)'],
+    'unknown' => ['Sound Detected — Unknown Direction', 'var(--muted)'],
+];
+$directionCounts = ['left' => 0, 'right' => 0, 'unknown' => 0];
 
 if ($patientIds) {
     $placeholders = implode(',', array_fill(0, count($patientIds), '?'));
@@ -32,25 +38,20 @@ if ($patientIds) {
     $stmt->execute($patientIds);
     $unreadAlerts = (int)$stmt->fetchColumn();
 
-    $stmt = db()->prepare("SELECT COUNT(*) FROM alerts WHERE user_id IN ($placeholders) AND detected_at::date=CURRENT_DATE");
+    $stmt = db()->prepare(
+        "SELECT COUNT(*) FROM alerts WHERE user_id IN ($placeholders)
+         AND (detected_at " . MANILA_SQL . ")::date = (NOW() AT TIME ZONE 'Asia/Manila')::date"
+    );
     $stmt->execute($patientIds);
     $todayAlerts = (int)$stmt->fetchColumn();
 
-    $stmt = db()->prepare(
-        "SELECT sound_type, COUNT(*) AS n FROM alerts WHERE user_id IN ($placeholders)
-         GROUP BY sound_type ORDER BY n DESC"
-    );
+    $stmt = db()->prepare("SELECT metadata FROM alerts WHERE user_id IN ($placeholders)");
     $stmt->execute($patientIds);
-    $typeCounts = $stmt->fetchAll();
+    foreach ($stmt->fetchAll() as $m) {
+        $directionCounts[alertDirection($m['metadata'] ?? null) ?? 'unknown']++;
+    }
 }
-
-$typeColors = [
-    'Doorbell'        => 'var(--info)',
-    'Fire Alarm'      => 'var(--danger)',
-    'Vehicle Horn'    => 'var(--warning)',
-    'Emergency Siren' => 'var(--danger)',
-    'Loud Knock'      => 'var(--info)',
-];
+$directionCounts = array_filter($directionCounts);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -94,22 +95,22 @@ $typeColors = [
                 <div class="sb-pulse-label">Total Alerts Detected</div>
             </div>
 
-            <?php if (!empty($typeCounts)): ?>
+            <?php if (!empty($directionCounts)): ?>
             <div class="sb-pulse-bar">
-                <?php foreach ($typeCounts as $tc):
-                    $pct = $totalAlerts > 0 ? round(($tc['n'] / $totalAlerts) * 100, 1) : 0;
-                    $color = $typeColors[$tc['sound_type']] ?? 'var(--muted)';
+                <?php foreach ($directionCounts as $dir => $n):
+                    [$label, $color] = $directionInfo[$dir];
+                    $pct = $totalAlerts > 0 ? round(($n / $totalAlerts) * 100, 1) : 0;
                 ?>
-                <div class="sb-pulse-seg" style="width:<?= $pct ?>%;background:<?= $color ?>" title="<?= htmlspecialchars($tc['sound_type']) ?>: <?= $tc['n'] ?>"></div>
+                <div class="sb-pulse-seg" style="width:<?= $pct ?>%;background:<?= $color ?>" title="<?= htmlspecialchars($label) ?>: <?= $n ?>"></div>
                 <?php endforeach; ?>
             </div>
             <div class="sb-pulse-legend">
-                <?php foreach ($typeCounts as $tc):
-                    $color = $typeColors[$tc['sound_type']] ?? 'var(--muted)';
+                <?php foreach ($directionCounts as $dir => $n):
+                    [$label, $color] = $directionInfo[$dir];
                 ?>
                 <span class="sb-pulse-legend-item">
                     <span class="sb-pulse-dot" style="background:<?= $color ?>"></span>
-                    <?= htmlspecialchars($tc['sound_type']) ?> · <?= $tc['n'] ?>
+                    <?= htmlspecialchars($label) ?> · <?= $n ?>
                 </span>
                 <?php endforeach; ?>
             </div>

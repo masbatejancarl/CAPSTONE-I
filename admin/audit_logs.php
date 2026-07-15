@@ -4,13 +4,6 @@ require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../config/db.php';
 requireRole('admin');
 
-// created_at is stored in UTC (Postgres NOW()); convert to Philippine Time for display.
-function toManilaTime(string $utcDatetime, string $format): string {
-    $dt = new DateTime($utcDatetime, new DateTimeZone('UTC'));
-    $dt->setTimezone(new DateTimeZone('Asia/Manila'));
-    return $dt->format($format);
-}
-
 $success = $error = '';
 
 if (!empty($_SESSION['flash_success'])) { $success = $_SESSION['flash_success']; unset($_SESSION['flash_success']); }

@@ -1,13 +1,28 @@
 <?php
 session_start();
 
+// detected_at/created_at are stored in UTC (Postgres NOW()); convert to Philippine Time for display.
+function toManilaTime(string $utcDatetime, string $format): string {
+    $dt = new DateTime($utcDatetime, new DateTimeZone('UTC'));
+    $dt->setTimezone(new DateTimeZone('Asia/Manila'));
+    return $dt->format($format);
+}
+
+function manilaToday(): string {
+    return (new DateTime('now', new DateTimeZone('Asia/Manila')))->format('Y-m-d');
+}
+
+// SQL fragment: converts a UTC-naive `timestamp` column to Manila wall-clock time,
+// so date/"today" comparisons match what Philippine users actually see on screen.
+const MANILA_SQL = "AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Manila'";
+
 function isLoggedIn() {
     return isset($_SESSION['user_id']);
 }
 
 function requireLogin() {
     if (!isLoggedIn()) {
-        header('Location: ' . BASE_URL . '/login.php');
+        header('Location: ' . BASE_URL . '/auth/login.php');
         exit;
     }
 }
@@ -15,7 +30,7 @@ function requireLogin() {
 function requireRole($role) {
     requireLogin();
     if ($_SESSION['role'] !== $role) {
-        header('Location: ' . BASE_URL . '/login.php?error=unauthorized');
+        header('Location: ' . BASE_URL . '/auth/login.php?error=unauthorized');
         exit;
     }
 }
@@ -105,22 +120,29 @@ function logAuditEvent(?int $userId, string $name, string $email, string $role, 
     $stmt->execute([$userId, $name, $email, $role, $action, $ip]);
 }
 
-// Reads the left/right/both mic direction out of an alert row's `metadata` column.
-// Accepts either a JSON object like {"direction":"left"} or a bare "left"/"right"/"both" string,
+// Reads the left/right mic direction out of an alert row's `metadata` column.
+// Accepts either a JSON object like {"direction":"left"} or a bare "left"/"right" string,
 // since different producers (ESP32 firmware, the React app) have written it either way.
 function alertDirection(?string $metadataValue): ?string {
     if (!$metadataValue) return null;
     $meta = json_decode($metadataValue, true);
     $dir  = is_array($meta) ? ($meta['direction'] ?? null) : trim($metadataValue);
-    return in_array($dir, ['left', 'right', 'both'], true) ? $dir : null;
+    return in_array($dir, ['left', 'right'], true) ? $dir : null;
 }
 
 function directionIcon(?string $direction): string {
     return match ($direction) {
         'left'  => 'bi-arrow-left-circle-fill',
         'right' => 'bi-arrow-right-circle-fill',
-        'both'  => 'bi-arrows-angle-expand',
-        default => '',
+        default => 'bi-question-circle',
+    };
+}
+
+function directionLabel(?string $direction): string {
+    return match ($direction) {
+        'left'  => 'Sound Detected Left',
+        'right' => 'Sound Detected Right',
+        default => 'Sound Detected — Unknown Direction',
     };
 }
 

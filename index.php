@@ -6,5 +6,5 @@ if (isLoggedIn()) {
     redirectByRole();
 }
 
-header('Location: login.php');
+header('Location: auth/login.php');
 exit;

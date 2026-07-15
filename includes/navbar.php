@@ -79,7 +79,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
 
     <!-- Logout -->
     <div class="sb-sidebar-footer">
-        <a href="<?= BASE_URL ?>/logout.php" class="sb-logout-link">
+        <a href="<?= BASE_URL ?>/auth/logout.php" class="sb-logout-link">
             <i class="bi bi-box-arrow-right"></i>
             <span>Sign Out</span>
         </a>

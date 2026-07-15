@@ -22,18 +22,17 @@ $months = [
     '07' => 'July',      '08' => 'August',   '09' => 'September',
     '10' => 'October',   '11' => 'November', '12' => 'December',
 ];
-$availableYears = range(2024, (int)date('Y'));
+$availableYears = range(2024, (int)manilaToday());
 
-$filterType     = $_GET['type']       ?? '';
-$filterStatus   = $_GET['status']     ?? '';
-$filterLocation = $_GET['location']   ?? '';
-$filterPatient  = (int)($_GET['patient_id'] ?? 0);
+$filterDirection = $_GET['direction']  ?? '';
+$filterStatus    = $_GET['status']     ?? '';
+$filterPatient   = (int)($_GET['patient_id'] ?? 0);
 $fromMonth      = $_GET['from_month'] ?? '';
 $toMonth        = $_GET['to_month']   ?? '';
 $filterYear     = $_GET['year']       ?? '';
 
-$currentYear  = date('Y');
-$currentMonth = date('m');
+$currentYear  = substr(manilaToday(), 0, 4);
+$currentMonth = substr(manilaToday(), 5, 2);
 
 // Realtime year: future months don't exist yet, so clamp them server-side too.
 if ($filterYear === $currentYear) {
@@ -64,23 +63,28 @@ if ($patientIds) {
 
     $where  = ["a.user_id IN ($placeholders)"];
     $params = $scopeIds;
-    if ($filterType)     { $where[] = 'a.sound_type = ?'; $params[] = $filterType; }
-    if ($filterStatus)   { $where[] = 'a.status = ?';     $params[] = $filterStatus; }
-    if ($filterLocation) { $where[] = 'a.location = ?';   $params[] = $filterLocation; }
+    if ($filterStatus) { $where[] = 'a.status = ?'; $params[] = $filterStatus; }
+    if ($filterDirection) {
+        // metadata holds either a bare "left"/"right"/"both" string or JSON like
+        // {"direction":"left"} depending on the producer, so a substring match
+        // catches both formats without requiring metadata to be valid JSON.
+        $where[] = 'a.metadata ILIKE ?';
+        $params[] = '%' . $filterDirection . '%';
+    }
 
     if ($filterYear) {
-        $where[] = "to_char(a.detected_at, 'YYYY') = ?";
+        $where[] = "to_char(a.detected_at " . MANILA_SQL . ", 'YYYY') = ?";
         $params[] = $filterYear;
     }
     if ($fromMonth && $toMonth) {
-        $where[] = "to_char(a.detected_at, 'MM') BETWEEN ? AND ?";
+        $where[] = "to_char(a.detected_at " . MANILA_SQL . ", 'MM') BETWEEN ? AND ?";
         $params[] = $fromMonth;
         $params[] = $toMonth;
     } elseif ($fromMonth) {
-        $where[] = "to_char(a.detected_at, 'MM') >= ?";
+        $where[] = "to_char(a.detected_at " . MANILA_SQL . ", 'MM') >= ?";
         $params[] = $fromMonth;
     } elseif ($toMonth) {
-        $where[] = "to_char(a.detected_at, 'MM') <= ?";
+        $where[] = "to_char(a.detected_at " . MANILA_SQL . ", 'MM') <= ?";
         $params[] = $toMonth;
     }
     $whereSQL = 'WHERE ' . implode(' AND ', $where);
@@ -99,13 +103,6 @@ if ($patientIds) {
     $alerts = $dstmt->fetchAll();
 }
 
-$soundIcons = [
-    'Doorbell'        => ['bi-bell-fill',                'sound-doorbell'],
-    'Fire Alarm'      => ['bi-fire',                     'sound-alarm'],
-    'Vehicle Horn'    => ['bi-car-front-fill',            'sound-vehicle'],
-    'Emergency Siren' => ['bi-exclamation-triangle-fill', 'sound-siren'],
-    'Loud Knock'      => ['bi-hand-index-thumb-fill',     'sound-knock'],
-];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -155,12 +152,11 @@ $soundIcons = [
                 </select>
             </div>
             <div class="col-6 col-md-2">
-                <label class="sb-label">Type</label>
-                <select name="type" class="form-select sb-input form-select-sm">
-                    <option value="">All Types</option>
-                    <?php foreach (['Doorbell','Fire Alarm','Vehicle Horn','Emergency Siren','Loud Knock'] as $t): ?>
-                    <option value="<?= $t ?>" <?= $filterType === $t ? 'selected' : '' ?>><?= $t ?></option>
-                    <?php endforeach; ?>
+                <label class="sb-label">Direction</label>
+                <select name="direction" class="form-select sb-input form-select-sm">
+                    <option value="">All</option>
+                    <option value="left"  <?= $filterDirection === 'left'  ? 'selected' : '' ?>>Left</option>
+                    <option value="right" <?= $filterDirection === 'right' ? 'selected' : '' ?>>Right</option>
                 </select>
             </div>
             <div class="col-6 col-md-1">
@@ -169,14 +165,6 @@ $soundIcons = [
                     <option value="">All</option>
                     <option value="unread" <?= $filterStatus === 'unread' ? 'selected' : '' ?>>Unread</option>
                     <option value="read"   <?= $filterStatus === 'read'   ? 'selected' : '' ?>>Read</option>
-                </select>
-            </div>
-            <div class="col-6 col-md-1">
-                <label class="sb-label">Location</label>
-                <select name="location" class="form-select sb-input form-select-sm">
-                    <option value="">All</option>
-                    <option value="indoor"  <?= $filterLocation === 'indoor'  ? 'selected' : '' ?>>Indoor</option>
-                    <option value="outdoor" <?= $filterLocation === 'outdoor' ? 'selected' : '' ?>>Outdoor</option>
                 </select>
             </div>
             <div class="col-6 col-md-1">
@@ -223,20 +211,18 @@ $soundIcons = [
             </div>
         <?php else: ?>
         <?php
-            $today     = date('Y-m-d');
-            $yesterday = date('Y-m-d', strtotime('-1 day'));
+            $today     = manilaToday();
+            $yesterday = (new DateTime('now', new DateTimeZone('Asia/Manila')))->modify('-1 day')->format('Y-m-d');
             $lastDate  = null;
         ?>
         <?php foreach ($alerts as $row):
-            $meta      = $soundIcons[$row['sound_type']] ?? ['bi-volume-up-fill', 'sound-default'];
             $direction = alertDirection($row['metadata'] ?? null);
-            $soundName = $row['sound_type'] ?: 'Sound Detected';
-            $rowDate   = date('Y-m-d', strtotime($row['detected_at']));
+            $rowDate   = toManilaTime($row['detected_at'], 'Y-m-d');
 
             if ($rowDate !== $lastDate):
                 if ($lastDate !== null) echo '</div>'; // close previous .sb-timeline-group
                 $lastDate = $rowDate;
-                $label = date('l, F j, Y', strtotime($row['detected_at']));
+                $label = toManilaTime($row['detected_at'], 'l, F j, Y');
                 if ($rowDate === $today) $label = 'Today — ' . $label;
                 elseif ($rowDate === $yesterday) $label = 'Yesterday — ' . $label;
         ?>
@@ -245,12 +231,12 @@ $soundIcons = [
         <?php endif; ?>
 
             <div class="sb-timeline-item" data-alert-id="<?= $row['id'] ?>">
-                <div class="sb-timeline-node <?= $meta[1] ?>">
-                    <i class="bi <?= $meta[0] ?>"></i>
+                <div class="sb-timeline-node sound-default">
+                    <i class="bi <?= directionIcon($direction) ?>"></i>
                 </div>
                 <div class="sb-timeline-content">
                     <div class="sb-timeline-row1">
-                        <span class="sb-timeline-title"><?= htmlspecialchars($soundName) ?></span>
+                        <span class="sb-timeline-title"><?= htmlspecialchars(directionLabel($direction)) ?></span>
                         <span class="sb-status <?= $row['status'] ?>"><?= ucfirst($row['status']) ?></span>
                     </div>
                     <div class="sb-timeline-meta">
@@ -258,14 +244,8 @@ $soundIcons = [
                             <span class="sb-avatar sb-avatar-sm"><?= strtoupper(substr($row['patient_name'], 0, 1)) ?></span>
                             <?= htmlspecialchars($row['patient_name']) ?>
                         </span>
-                        <span><i class="bi bi-clock"></i> <?= date('h:i A', strtotime($row['detected_at'])) ?></span>
-                        <?php if ($row['location']): ?>
-                        <span><i class="bi bi-<?= $row['location'] === 'indoor' ? 'house' : 'tree' ?>"></i> <?= ucfirst($row['location']) ?></span>
-                        <?php endif; ?>
+                        <span><i class="bi bi-clock"></i> <?= toManilaTime($row['detected_at'], 'h:i A') ?></span>
                         <span><i class="bi bi-soundwave"></i> <?= $row['decibel_level'] ? number_format($row['decibel_level'], 1) . ' dB' : '—' ?></span>
-                        <?php if ($direction): ?>
-                        <span><i class="bi <?= directionIcon($direction) ?>"></i> <?= $direction === 'both' ? 'Both sides' : ucfirst($direction) ?></span>
-                        <?php endif; ?>
                     </div>
                 </div>
             </div>

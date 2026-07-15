@@ -11,17 +11,14 @@ $lastAlert = db()->prepare("SELECT * FROM alerts WHERE user_id = ? ORDER BY dete
 $lastAlert->execute([$uid]);
 $lastAlert = $lastAlert->fetch();
 
-$unreadToday = (int)db()->query(
-    "SELECT COUNT(*) FROM alerts WHERE user_id=$uid AND status='unread' AND detected_at::date = CURRENT_DATE"
-)->fetchColumn();
+$utstmt = db()->prepare(
+    "SELECT COUNT(*) FROM alerts WHERE user_id=? AND status='unread'
+     AND (detected_at " . MANILA_SQL . ")::date = (NOW() AT TIME ZONE 'Asia/Manila')::date"
+);
+$utstmt->execute([$uid]);
+$unreadToday = (int)$utstmt->fetchColumn();
 
-$statusIcons = [
-    'Doorbell'        => 'bi-bell-fill',
-    'Fire Alarm'      => 'bi-fire',
-    'Vehicle Horn'    => 'bi-car-front-fill',
-    'Emergency Siren' => 'bi-exclamation-triangle-fill',
-    'Loud Knock'      => 'bi-hand-index-thumb-fill',
-];
+$lastAlertDirection = $lastAlert ? alertDirection($lastAlert['metadata'] ?? null) : null;
 
 function sbTimeAgo(string $datetime): string {
     $diff = time() - strtotime($datetime);
@@ -80,8 +77,8 @@ $developers = [
         <div class="fb-status-divider"></div>
         <?php if ($lastAlert): ?>
         <a href="alerts.php" class="fb-status-recent">
-            <i class="bi <?= $statusIcons[$lastAlert['sound_type']] ?? 'bi-volume-up-fill' ?>"></i>
-            Last detected: <strong><?= htmlspecialchars($lastAlert['sound_type']) ?></strong>
+            <i class="bi <?= directionIcon($lastAlertDirection) ?>"></i>
+            Last detected: <strong><?= htmlspecialchars(directionLabel($lastAlertDirection)) ?></strong>
             · <?= sbTimeAgo($lastAlert['detected_at']) ?>
         </a>
         <?php else: ?>

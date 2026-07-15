@@ -9,17 +9,11 @@ if (!isLoggedIn()) { http_response_code(401); echo json_encode(['error' => 'Unau
 $data = json_decode(file_get_contents('php://input'), true);
 $id   = (int)($data['id'] ?? 0);
 $uid  = (int)currentUser()['id'];
-$role = currentUser()['role'];
 
 if (!$id) { http_response_code(400); echo json_encode(['error' => 'Missing id']); exit; }
 
-// Admin can mark any; user can only mark their own
-if ($role === 'admin') {
-    $stmt = db()->prepare("UPDATE alerts SET status='read' WHERE id=?");
-    $stmt->execute([$id]);
-} else {
-    $stmt = db()->prepare("UPDATE alerts SET status='read' WHERE id=? AND user_id=?");
-    $stmt->execute([$id, $uid]);
-}
+// Only the alert's own user may mark it read — no role gets to mark others' alerts.
+$stmt = db()->prepare("UPDATE alerts SET status='read' WHERE id=? AND user_id=?");
+$stmt->execute([$id, $uid]);
 
 echo json_encode(['success' => true]);

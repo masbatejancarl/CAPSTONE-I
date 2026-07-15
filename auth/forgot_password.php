@@ -1,7 +1,7 @@
 <?php
 define('BASE_URL', '/CAPSTONE I');
-require_once __DIR__ . '/includes/auth.php';
-require_once __DIR__ . '/config/db.php';
+require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../config/db.php';
 
 if (isLoggedIn()) { redirectByRole(); }
 
@@ -60,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === 'find_em
             logAuditEvent((int)$user['id'], $user['name'], $email, $user['role'], 'password_reset');
             unset($_SESSION['fp_email']);
 
-            header('Location: ' . BASE_URL . '/login.php?reset=1');
+            header('Location: ' . BASE_URL . '/auth/login.php?reset=1');
             exit;
         }
     }
@@ -81,7 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === 'find_em
 </head>
 <body>
 <div class="sb-split">
-    <?php require_once __DIR__ . '/includes/auth_brand_panel.php'; ?>
+    <?php require_once __DIR__ . '/../includes/auth_brand_panel.php'; ?>
     <div class="sb-split-form">
     <div class="sb-auth-card">
 
@@ -134,7 +134,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === 'find_em
         <?php endif; ?>
 
         <div style="text-align:center;margin-top:16px;font-size:12px;color:var(--muted)">
-            <a href="<?= BASE_URL ?>/login.php" style="color:var(--accent)">Back to sign in</a>
+            <a href="<?= BASE_URL ?>/auth/login.php" style="color:var(--accent)">Back to sign in</a>
         </div>
 
     </div>

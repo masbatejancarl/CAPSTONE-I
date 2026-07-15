@@ -1,6 +1,6 @@
 <div class="sb-split-brand">
     <div class="sb-split-brand-inner">
-        <a href="<?= BASE_URL ?>/login.php" class="sb-split-brand-logo">
+        <a href="<?= BASE_URL ?>/auth/login.php" class="sb-split-brand-logo">
             <img src="<?= BASE_URL ?>/assets/images/logo.png" alt="SonoBand">
             <span>SonoBand</span>
         </a>

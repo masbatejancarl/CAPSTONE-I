@@ -9,7 +9,9 @@ $user = currentUser();
 $totalUsers   = (int)db()->query("SELECT COUNT(*) FROM users")->fetchColumn();
 $totalAlerts  = (int)db()->query("SELECT COUNT(*) FROM alerts")->fetchColumn();
 $unreadAlerts = (int)db()->query("SELECT COUNT(*) FROM alerts WHERE status='unread'")->fetchColumn();
-$todayAlerts  = (int)db()->query("SELECT COUNT(*) FROM alerts WHERE detected_at::date=CURRENT_DATE")->fetchColumn();
+$todayAlerts  = (int)db()->query(
+    "SELECT COUNT(*) FROM alerts WHERE (detected_at " . MANILA_SQL . ")::date = (NOW() AT TIME ZONE 'Asia/Manila')::date"
+)->fetchColumn();
 
 $recent = db()->query(
     "SELECT a.*, u.name AS user_name FROM alerts a
@@ -17,24 +19,18 @@ $recent = db()->query(
      ORDER BY a.detected_at DESC LIMIT 8"
 )->fetchAll();
 
-$soundIcons = [
-    'Doorbell'        => ['bi-bell-fill',                'sound-doorbell'],
-    'Fire Alarm'      => ['bi-fire',                     'sound-alarm'],
-    'Vehicle Horn'    => ['bi-car-front-fill',            'sound-vehicle'],
-    'Emergency Siren' => ['bi-exclamation-triangle-fill', 'sound-siren'],
-    'Loud Knock'      => ['bi-hand-index-thumb-fill',     'sound-knock'],
+$directionInfo = [
+    'left'    => ['Sound Detected Left',              'var(--info)'],
+    'right'   => ['Sound Detected Right',             'var(--warning)'],
+    'unknown' => ['Sound Detected — Unknown Direction', 'var(--muted)'],
 ];
 
-$typeCounts = db()->query(
-    "SELECT sound_type, COUNT(*) AS n FROM alerts GROUP BY sound_type ORDER BY n DESC"
-)->fetchAll();
-$typeColors = [
-    'Doorbell'        => 'var(--info)',
-    'Fire Alarm'      => 'var(--danger)',
-    'Vehicle Horn'    => 'var(--warning)',
-    'Emergency Siren' => 'var(--danger)',
-    'Loud Knock'      => 'var(--info)',
-];
+$directionCounts = ['left' => 0, 'right' => 0, 'unknown' => 0];
+$metaRows = db()->query("SELECT metadata FROM alerts")->fetchAll();
+foreach ($metaRows as $m) {
+    $directionCounts[alertDirection($m['metadata'] ?? null) ?? 'unknown']++;
+}
+$directionCounts = array_filter($directionCounts);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -69,22 +65,22 @@ $typeColors = [
                 <div class="sb-pulse-label">Total Alerts Detected</div>
             </div>
 
-            <?php if (!empty($typeCounts)): ?>
+            <?php if (!empty($directionCounts)): ?>
             <div class="sb-pulse-bar">
-                <?php foreach ($typeCounts as $tc):
-                    $pct = $totalAlerts > 0 ? round(($tc['n'] / $totalAlerts) * 100, 1) : 0;
-                    $color = $typeColors[$tc['sound_type']] ?? 'var(--muted)';
+                <?php foreach ($directionCounts as $dir => $n):
+                    [$label, $color] = $directionInfo[$dir];
+                    $pct = $totalAlerts > 0 ? round(($n / $totalAlerts) * 100, 1) : 0;
                 ?>
-                <div class="sb-pulse-seg" style="width:<?= $pct ?>%;background:<?= $color ?>" title="<?= htmlspecialchars($tc['sound_type']) ?>: <?= $tc['n'] ?>"></div>
+                <div class="sb-pulse-seg" style="width:<?= $pct ?>%;background:<?= $color ?>" title="<?= htmlspecialchars($label) ?>: <?= $n ?>"></div>
                 <?php endforeach; ?>
             </div>
             <div class="sb-pulse-legend">
-                <?php foreach ($typeCounts as $tc):
-                    $color = $typeColors[$tc['sound_type']] ?? 'var(--muted)';
+                <?php foreach ($directionCounts as $dir => $n):
+                    [$label, $color] = $directionInfo[$dir];
                 ?>
                 <span class="sb-pulse-legend-item">
                     <span class="sb-pulse-dot" style="background:<?= $color ?>"></span>
-                    <?= htmlspecialchars($tc['sound_type']) ?> · <?= $tc['n'] ?>
+                    <?= htmlspecialchars($label) ?> · <?= $n ?>
                 </span>
                 <?php endforeach; ?>
             </div>
@@ -156,18 +152,18 @@ $typeColors = [
             </div>
         <?php else: ?>
         <?php
-            $today     = date('Y-m-d');
-            $yesterday = date('Y-m-d', strtotime('-1 day'));
+            $today     = manilaToday();
+            $yesterday = (new DateTime('now', new DateTimeZone('Asia/Manila')))->modify('-1 day')->format('Y-m-d');
             $lastDate  = null;
         ?>
         <?php foreach ($recent as $row):
-            $meta    = $soundIcons[$row['sound_type']] ?? ['bi-volume-up-fill', 'sound-default'];
-            $rowDate = date('Y-m-d', strtotime($row['detected_at']));
+            $direction = alertDirection($row['metadata'] ?? null);
+            $rowDate   = toManilaTime($row['detected_at'], 'Y-m-d');
 
             if ($rowDate !== $lastDate):
                 if ($lastDate !== null) echo '</div>'; // close previous .sb-timeline-group
                 $lastDate = $rowDate;
-                $label = date('l, F j, Y', strtotime($row['detected_at']));
+                $label = toManilaTime($row['detected_at'], 'l, F j, Y');
                 if ($rowDate === $today) $label = 'Today — ' . $label;
                 elseif ($rowDate === $yesterday) $label = 'Yesterday — ' . $label;
         ?>
@@ -176,12 +172,12 @@ $typeColors = [
         <?php endif; ?>
 
             <div class="sb-timeline-item" data-alert-id="<?= $row['id'] ?>">
-                <div class="sb-timeline-node <?= $meta[1] ?>">
-                    <i class="bi <?= $meta[0] ?>"></i>
+                <div class="sb-timeline-node sound-default">
+                    <i class="bi <?= directionIcon($direction) ?>"></i>
                 </div>
                 <div class="sb-timeline-content">
                     <div class="sb-timeline-row1">
-                        <span class="sb-timeline-title"><?= htmlspecialchars($row['sound_type']) ?></span>
+                        <span class="sb-timeline-title"><?= htmlspecialchars(directionLabel($direction)) ?></span>
                         <span class="sb-status <?= $row['status'] ?>"><?= ucfirst($row['status']) ?></span>
                     </div>
                     <div class="sb-timeline-meta">
@@ -189,8 +185,7 @@ $typeColors = [
                             <span class="sb-avatar sb-avatar-sm"><?= strtoupper(substr($row['user_name'], 0, 1)) ?></span>
                             <?= htmlspecialchars($row['user_name']) ?>
                         </span>
-                        <span><i class="bi bi-clock"></i> <?= date('h:i A', strtotime($row['detected_at'])) ?></span>
-                        <span><i class="bi bi-<?= $row['location'] === 'indoor' ? 'house' : 'tree' ?>"></i> <?= ucfirst($row['location']) ?></span>
+                        <span><i class="bi bi-clock"></i> <?= toManilaTime($row['detected_at'], 'h:i A') ?></span>
                         <span><i class="bi bi-soundwave"></i> <?= $row['decibel_level'] ? number_format($row['decibel_level'], 1) . ' dB' : '—' ?></span>
                     </div>
                 </div>

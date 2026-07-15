@@ -1,7 +1,7 @@
 ﻿<?php
 define('BASE_URL', '/CAPSTONE I');
-require_once __DIR__ . '/includes/auth.php';
-require_once __DIR__ . '/config/db.php';
+require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../config/db.php';
 
 if (isLoggedIn()) { redirectByRole(); }
 
@@ -54,7 +54,7 @@ $resetSuccess = isset($_GET['reset']);
 </head>
 <body>
 <div class="sb-split">
-    <?php require_once __DIR__ . '/includes/auth_brand_panel.php'; ?>
+    <?php require_once __DIR__ . '/../includes/auth_brand_panel.php'; ?>
     <div class="sb-split-form">
     <div class="sb-auth-card">
 
@@ -96,7 +96,7 @@ $resetSuccess = isset($_GET['reset']);
             <div class="mb-4">
                 <div class="d-flex justify-content-between align-items-center">
                     <label class="sb-label">Password</label>
-                    <a href="<?= BASE_URL ?>/forgot_password.php" style="font-size:11.5px;color:var(--accent)">Forgot password?</a>
+                    <a href="<?= BASE_URL ?>/auth/forgot_password.php" style="font-size:11.5px;color:var(--accent)">Forgot password?</a>
                 </div>
                 <input type="password" name="password" class="form-control sb-input"
                        placeholder="••••••••" required>

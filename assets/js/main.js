@@ -19,8 +19,8 @@ document.addEventListener('DOMContentLoaded', () => {
         setInterval(tick, 1000);
     }
 
-    // Mark alert as read on row click (alert table)
-    document.querySelectorAll('[data-alert-id]').forEach(row => {
+    // Mark alert as read on row click (user alert history only — admin/caregiver views are read-only)
+    document.querySelectorAll('.js-mark-readable[data-alert-id]').forEach(row => {
         row.style.cursor = 'pointer';
         row.addEventListener('click', () => {
             const id = row.dataset.alertId;

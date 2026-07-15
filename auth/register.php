@@ -1,7 +1,7 @@
 ﻿<?php
 define('BASE_URL', '/CAPSTONE I');
-require_once __DIR__ . '/includes/auth.php';
-require_once __DIR__ . '/config/db.php';
+require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../config/db.php';
 
 if (isLoggedIn()) { redirectByRole(); }
 
@@ -57,7 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body>
 <div class="sb-split">
-    <?php require_once __DIR__ . '/includes/auth_brand_panel.php'; ?>
+    <?php require_once __DIR__ . '/../includes/auth_brand_panel.php'; ?>
     <div class="sb-split-form">
     <div class="sb-auth-card" style="max-width:430px">
 

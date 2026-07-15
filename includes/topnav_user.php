@@ -6,19 +6,20 @@ $ustmt = db()->prepare("SELECT email FROM users WHERE id = ?");
 $ustmt->execute([$uid]);
 $user['email'] = $ustmt->fetchColumn() ?: '';
 
-$unread = (int)db()->query("SELECT COUNT(*) FROM alerts WHERE user_id=$uid AND status='unread' AND detected_at::date = CURRENT_DATE")->fetchColumn();
+$ucstmt = db()->prepare(
+    "SELECT COUNT(*) FROM alerts WHERE user_id=? AND status='unread'
+     AND (detected_at " . MANILA_SQL . ")::date = (NOW() AT TIME ZONE 'Asia/Manila')::date"
+);
+$ucstmt->execute([$uid]);
+$unread = (int)$ucstmt->fetchColumn();
 
-$nstmt = db()->prepare("SELECT * FROM alerts WHERE user_id=? AND detected_at::date = CURRENT_DATE ORDER BY detected_at DESC LIMIT 5");
+$nstmt = db()->prepare(
+    "SELECT * FROM alerts WHERE user_id=?
+     AND (detected_at " . MANILA_SQL . ")::date = (NOW() AT TIME ZONE 'Asia/Manila')::date
+     ORDER BY detected_at DESC LIMIT 5"
+);
 $nstmt->execute([$uid]);
 $notifications = $nstmt->fetchAll();
-
-$notifIcons = [
-    'Doorbell'        => 'bi-bell-fill',
-    'Fire Alarm'      => 'bi-fire',
-    'Vehicle Horn'    => 'bi-car-front-fill',
-    'Emergency Siren' => 'bi-exclamation-triangle-fill',
-    'Loud Knock'      => 'bi-hand-index-thumb-fill',
-];
 
 $currentPage = basename($_SERVER['PHP_SELF']);
 ?>
@@ -52,20 +53,12 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                     ?>
                         <div class="fb-notif-item <?= $n['status'] === 'unread' ? 'unread' : '' ?>" data-alert-id="<?= $n['id'] ?>">
                             <div class="fb-notif-icon">
-                                <i class="bi <?= $notifIcons[$n['sound_type']] ?? 'bi-volume-up-fill' ?>"></i>
+                                <i class="bi <?= directionIcon($dir) ?>"></i>
                             </div>
                             <div class="fb-notif-text">
-                                <div class="fb-notif-title">
-                                    <?= htmlspecialchars($n['sound_type'] ?: 'Sound Detected') ?>
-                                    <?php if ($dir): ?>
-                                        <span class="fb-notif-dir">
-                                            <i class="bi <?= directionIcon($dir) ?>"></i>
-                                            <?= $dir === 'both' ? 'Both sides' : ucfirst($dir) ?>
-                                        </span>
-                                    <?php endif; ?>
-                                </div>
-                                <div><?= $n['location'] ? ucfirst($n['location']) . ' · ' : '' ?><?= $n['decibel_level'] ? number_format($n['decibel_level'], 1) . ' dB' : '—' ?></div>
-                                <div class="fb-notif-time"><?= date('M d, Y H:i', strtotime($n['detected_at'])) ?></div>
+                                <div class="fb-notif-title"><?= htmlspecialchars(directionLabel($dir)) ?></div>
+                                <div><?= $n['decibel_level'] ? number_format($n['decibel_level'], 1) . ' dB' : '—' ?></div>
+                                <div class="fb-notif-time"><?= toManilaTime($n['detected_at'], 'M d, Y H:i') ?></div>
                             </div>
                         </div>
                     <?php endforeach; ?>
@@ -88,7 +81,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                 <a href="<?= BASE_URL ?>/user/settings.php" class="fb-dropdown-item <?= $currentPage === 'settings.php' ? 'active' : '' ?>">
                     <i class="bi bi-gear-fill"></i> Account Settings
                 </a>
-                <a href="<?= BASE_URL ?>/logout.php" class="fb-dropdown-item danger">
+                <a href="<?= BASE_URL ?>/auth/logout.php" class="fb-dropdown-item danger">
                     <i class="bi bi-box-arrow-right"></i> Sign Out
                 </a>
             </div>
@@ -147,16 +140,19 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             list.innerHTML = '<div class="fb-notif-empty"><i class="bi bi-inbox" style="font-size:20px;display:block;margin-bottom:6px"></i>No alerts today.</div>';
             return;
         }
+        const dirLabels = {
+            left: 'Sound Detected Left',
+            right: 'Sound Detected Right',
+            both: 'Sound Detected Both Sides',
+        };
         list.innerHTML = data.notifications.map(n => {
-            const dirLabel = n.direction === 'both' ? 'Both sides' : (n.direction ? n.direction.charAt(0).toUpperCase() + n.direction.slice(1) : '');
-            const dirTag = n.direction
-                ? ` <span class="fb-notif-dir"><i class="bi ${dirIcons[n.direction] || ''}"></i> ${dirLabel}</span>`
-                : '';
+            const icon  = dirIcons[n.direction] || 'bi-question-circle';
+            const label = dirLabels[n.direction] || 'Sound Detected — Unknown Direction';
             return `<div class="fb-notif-item ${n.status === 'unread' ? 'unread' : ''}" data-alert-id="${n.id}">
-                <div class="fb-notif-icon"><i class="bi ${n.icon}"></i></div>
+                <div class="fb-notif-icon"><i class="bi ${icon}"></i></div>
                 <div class="fb-notif-text">
-                    <div class="fb-notif-title">${n.sound_type || 'Sound Detected'}${dirTag}</div>
-                    <div>${n.location ? n.location.charAt(0).toUpperCase() + n.location.slice(1) + ' · ' : ''}${n.decibel}</div>
+                    <div class="fb-notif-title">${label}</div>
+                    <div>${n.decibel}</div>
                     <div class="fb-notif-time">${n.detected_at}</div>
                 </div>
             </div>`;
@@ -196,7 +192,12 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                 if (!data) return;
                 const newestId = data.notifications[0]?.id ?? null;
                 if (lastSeenId !== null && newestId !== null && newestId !== lastSeenId && Notification?.permission === 'granted') {
-                    new Notification('SonoBand Alert', { body: data.notifications[0].sound_type });
+                    const dirLabels = {
+                        left: 'Sound Detected Left',
+                        right: 'Sound Detected Right',
+                        both: 'Sound Detected Both Sides',
+                    };
+                    new Notification('SonoBand Alert', { body: dirLabels[data.notifications[0].direction] || 'Sound Detected — Unknown Direction' });
                 }
                 lastSeenId = newestId;
                 renderNotifications(data);
