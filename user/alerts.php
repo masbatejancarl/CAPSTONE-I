@@ -102,7 +102,7 @@ $alerts = $dstmt->fetchAll();
     <!-- Filters -->
     <div class="sb-filter">
         <form method="GET" class="row g-2 align-items-end">
-            <div class="col-6 col-md-2">
+            <div class="col-6 col-md-3">
                 <label class="sb-label">Direction</label>
                 <select name="direction" class="form-select sb-input form-select-sm">
                     <option value="">All</option>
@@ -110,7 +110,7 @@ $alerts = $dstmt->fetchAll();
                     <option value="right" <?= $filterDirection === 'right' ? 'selected' : '' ?>>Right</option>
                 </select>
             </div>
-            <div class="col-6 col-md-2">
+            <div class="col-6 col-md-3">
                 <label class="sb-label">Status</label>
                 <select name="status" class="form-select sb-input form-select-sm">
                     <option value="">All</option>
@@ -192,7 +192,9 @@ $alerts = $dstmt->fetchAll();
                     </div>
                     <div class="sb-timeline-meta">
                         <span><i class="bi bi-clock"></i> <?= toManilaTime($row['detected_at'], 'h:i A') ?></span>
-                        <span><i class="bi bi-soundwave"></i> <?= $row['decibel_level'] ? number_format($row['decibel_level'], 1) . ' dB' : '—' ?></span>
+                        <?php if ($row['decibel_level']): ?>
+                        <span><i class="bi bi-soundwave"></i> <?= number_format($row['decibel_level'], 1) ?> dB</span>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -216,6 +218,8 @@ $alerts = $dstmt->fetchAll();
         <?php endif; ?>
         <?php endif; ?>
     </div>
+
+    <footer class="sb-page-footer">&copy; <?= date('Y') ?> SonoBand. All rights reserved.</footer>
 
 </div>
 

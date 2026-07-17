@@ -82,15 +82,3 @@ document.addEventListener('DOMContentLoaded', () => {
         update();
     });
 });
-
-// Sound type → icon + CSS class helper
-function getSoundMeta(type) {
-    const map = {
-        'Doorbell':        { icon: '🔔', cls: 'sound-doorbell' },
-        'Fire Alarm':      { icon: '🚨', cls: 'sound-alarm'    },
-        'Vehicle Horn':    { icon: '📯', cls: 'sound-vehicle'  },
-        'Emergency Siren': { icon: '🚑', cls: 'sound-siren'    },
-        'Loud Knock':      { icon: '👊', cls: 'sound-knock'    },
-    };
-    return map[type] || { icon: '🔊', cls: 'sound-default' };
-}

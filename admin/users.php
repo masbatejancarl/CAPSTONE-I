@@ -64,19 +64,21 @@ $users = $dstmt->fetchAll();
 
 $patientOptions = db()->query("SELECT id, name FROM users WHERE role='user' ORDER BY name")->fetchAll();
 
-// Linked patient names per caregiver, for display on their user card.
+// Linked patients per caregiver (names for display, ids for the edit modal's checklist).
 $caregiverIds = array_column(array_filter($users, fn($u) => $u['role'] === 'caregiver'), 'id');
 $linkedPatients = [];
+$linkedPatientIds = [];
 if ($caregiverIds) {
     $placeholders = implode(',', array_fill(0, count($caregiverIds), '?'));
     $lstmt = db()->prepare(
-        "SELECT cl.caregiver_id, u.name FROM caregiver_links cl
+        "SELECT cl.caregiver_id, u.id, u.name FROM caregiver_links cl
          JOIN users u ON u.id = cl.patient_id
          WHERE cl.caregiver_id IN ($placeholders) ORDER BY u.name"
     );
     $lstmt->execute($caregiverIds);
     foreach ($lstmt->fetchAll() as $row) {
         $linkedPatients[$row['caregiver_id']][] = $row['name'];
+        $linkedPatientIds[$row['caregiver_id']][] = (int)$row['id'];
     }
 }
 ?>
@@ -173,11 +175,16 @@ if ($caregiverIds) {
                     No linked patients
                 <?php endif; ?>
             </div>
-            <?php else: ?>
+            <?php elseif ($row['role'] === 'user'): ?>
             <a href="alerts.php?user_id=<?= $row['id'] ?>" class="sb-user-card-stat">
                 <i class="bi bi-bell-fill"></i>
                 <?= $row['alert_count'] ?> alert<?= (int)$row['alert_count'] === 1 ? '' : 's' ?> recorded
             </a>
+            <?php else: ?>
+            <div class="sb-user-card-stat">
+                <i class="bi bi-shield-check"></i>
+                Full system access
+            </div>
             <?php endif; ?>
 
             <div class="sb-user-card-footer">
@@ -185,18 +192,28 @@ if ($caregiverIds) {
                     <i class="bi bi-calendar3"></i> Joined <?= date('M d, Y', strtotime($row['created_at'])) ?>
                 </span>
                 <?php if ($row['id'] === currentUser()['id']): ?>
-                <span class="sb-user-card-you">You</span>
+                <span class="sb-user-card-you sb-user-card-footer-row2">You</span>
                 <?php elseif ($row['role'] === 'admin'): ?>
-                <span class="sb-user-card-you"><i class="bi bi-shield-lock-fill"></i> Protected</span>
+                <span class="sb-user-card-you sb-user-card-footer-row2"><i class="bi bi-shield-lock-fill"></i> Protected</span>
                 <?php else: ?>
-                <form method="POST" action="users.php?<?= http_build_query($_GET) ?>" class="js-delete-form">
-                    <input type="hidden" name="delete" value="<?= $row['id'] ?>">
-                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
-                    <button type="button" class="btn sb-btn-danger js-delete-trigger"
-                            data-user-name="<?= htmlspecialchars($row['name']) ?>">
-                        <i class="bi bi-trash3"></i> Delete
+                <div class="sb-user-card-actions sb-user-card-footer-row2">
+                    <?php if ($row['role'] === 'caregiver'): ?>
+                    <button type="button" class="btn sb-btn-outline js-edit-patients-trigger"
+                            data-caregiver-id="<?= $row['id'] ?>"
+                            data-caregiver-name="<?= htmlspecialchars($row['name']) ?>"
+                            data-linked-ids="<?= htmlspecialchars(implode(',', $linkedPatientIds[$row['id']] ?? [])) ?>">
+                        <i class="bi bi-pencil-fill"></i> Edit
                     </button>
-                </form>
+                    <?php endif; ?>
+                    <form method="POST" action="users.php?<?= http_build_query($_GET) ?>">
+                        <input type="hidden" name="delete" value="<?= $row['id'] ?>">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+                        <button type="button" class="btn sb-btn-danger js-delete-trigger"
+                                data-user-name="<?= htmlspecialchars($row['name']) ?>">
+                            <i class="bi bi-trash3"></i> Delete
+                        </button>
+                    </form>
+                </div>
                 <?php endif; ?>
             </div>
         </div>
@@ -319,6 +336,51 @@ if ($caregiverIds) {
     </div>
 </div>
 
+<!-- Edit Linked Patients Modal -->
+<div class="modal fade" id="editPatientsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="sb-modal-title-group">
+                    <i class="bi bi-person-heart"></i>
+                    <div>
+                        <h5 class="modal-title">Edit Linked Patients</h5>
+                        <div class="sb-modal-sub" id="editPatientsCaregiverName"></div>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="<?= BASE_URL ?>/admin/edit_caregiver_patients.php" id="editPatientsForm">
+                <input type="hidden" name="caregiver_id" id="editPatientsCaregiverId" value="">
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+                <div class="modal-body sb-modal-form">
+                    <div>
+                        <label class="sb-label"><i class="bi bi-person-heart"></i> Patients to Monitor</label>
+                        <div class="sb-checklist">
+                            <?php if (empty($patientOptions)): ?>
+                                <span class="sb-modal-sub">No user accounts available to assign yet.</span>
+                            <?php else: ?>
+                                <?php foreach ($patientOptions as $p): ?>
+                                <label class="sb-checklist-item">
+                                    <input type="checkbox" name="patient_ids[]" value="<?= $p['id'] ?>" class="js-edit-patient-checkbox">
+                                    <?= htmlspecialchars($p['name']) ?>
+                                </label>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn sb-btn-outline" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn sb-btn-primary">
+                        <i class="bi bi-check-lg"></i> Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="<?= BASE_URL ?>/assets/js/main.js"></script>
 <script>
@@ -354,6 +416,28 @@ if ($caregiverIds) {
 
     document.getElementById('deleteConfirmSubmit').addEventListener('click', () => {
         if (pendingDeleteForm) pendingDeleteForm.submit();
+    });
+
+    // Edit Linked Patients — populate the shared modal with the clicked caregiver's data.
+    const editPatientsModalEl = document.getElementById('editPatientsModal');
+    const editPatientsModal = new bootstrap.Modal(editPatientsModalEl);
+    const editPatientCheckboxes = document.querySelectorAll('.js-edit-patient-checkbox');
+
+    document.querySelectorAll('.js-edit-patients-trigger').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const linkedIds = (btn.dataset.linkedIds || '')
+                .split(',').filter(Boolean).map(Number);
+
+            document.getElementById('editPatientsCaregiverId').value = btn.dataset.caregiverId;
+            document.getElementById('editPatientsCaregiverName').textContent =
+                'Caregiver: ' + btn.dataset.caregiverName;
+
+            editPatientCheckboxes.forEach(cb => {
+                cb.checked = linkedIds.includes(Number(cb.value));
+            });
+
+            editPatientsModal.show();
+        });
     });
 })();
 </script>

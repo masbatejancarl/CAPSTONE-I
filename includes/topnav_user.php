@@ -57,7 +57,9 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                             </div>
                             <div class="fb-notif-text">
                                 <div class="fb-notif-title"><?= htmlspecialchars(directionLabel($dir)) ?></div>
-                                <div><?= $n['decibel_level'] ? number_format($n['decibel_level'], 1) . ' dB' : '—' ?></div>
+                                <?php if ($n['decibel_level']): ?>
+                                <div><?= number_format($n['decibel_level'], 1) ?> dB</div>
+                                <?php endif; ?>
                                 <div class="fb-notif-time"><?= toManilaTime($n['detected_at'], 'M d, Y H:i') ?></div>
                             </div>
                         </div>
@@ -121,7 +123,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
 
     // Poll for new alerts so a sound detected on the device shows up here
     // without the user having to reload the page.
-    const dirIcons = { left: 'bi-arrow-left-circle-fill', right: 'bi-arrow-right-circle-fill', both: 'bi-arrows-angle-expand' };
+    const dirIcons = { left: 'bi-arrow-left-circle-fill', right: 'bi-arrow-right-circle-fill' };
     const badge = document.getElementById('fbNotifBadge');
     const list  = document.getElementById('fbNotifList');
     let lastSeenId = null;
@@ -143,7 +145,6 @@ $currentPage = basename($_SERVER['PHP_SELF']);
         const dirLabels = {
             left: 'Sound Detected Left',
             right: 'Sound Detected Right',
-            both: 'Sound Detected Both Sides',
         };
         list.innerHTML = data.notifications.map(n => {
             const icon  = dirIcons[n.direction] || 'bi-question-circle';
@@ -152,7 +153,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                 <div class="fb-notif-icon"><i class="bi ${icon}"></i></div>
                 <div class="fb-notif-text">
                     <div class="fb-notif-title">${label}</div>
-                    <div>${n.decibel}</div>
+                    ${n.decibel ? `<div>${n.decibel}</div>` : ''}
                     <div class="fb-notif-time">${n.detected_at}</div>
                 </div>
             </div>`;

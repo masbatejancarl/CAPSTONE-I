@@ -472,6 +472,7 @@ a { color: inherit; text-decoration: none; }
     display: flex;
     flex-direction: column;
     gap: 10px;
+    min-height: 230px;
     transition: border-color var(--t), transform var(--t);
 }
 .sb-user-card:hover { border-color: var(--border-2); transform: translateY(-2px); }
@@ -516,9 +517,10 @@ a { color: inherit; text-decoration: none; }
 
 .sb-user-card-footer {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    margin-top: auto;
     padding-top: 10px;
     border-top: 1px solid var(--border);
 }
@@ -530,8 +532,8 @@ a { color: inherit; text-decoration: none; }
     color: var(--muted);
     white-space: nowrap;
 }
+.sb-user-card-footer-row2 { display: flex; justify-content: flex-end; }
 .sb-user-card-you {
-    display: inline-flex;
     align-items: center;
     gap: 4px;
     font-size: 11px;
@@ -539,6 +541,8 @@ a { color: inherit; text-decoration: none; }
     font-style: italic;
 }
 .sb-user-card-footer form { margin: 0; }
+.sb-user-card-actions { align-items: center; gap: 6px; flex-wrap: wrap; }
+.sb-user-card-actions .btn { padding: 6px 10px; font-size: 11.5px; }
 
 /* ─── System Pulse panel (Admin Dashboard) ────── */
 .sb-pulse {
@@ -1975,6 +1979,16 @@ a.fb-status-recent:hover i { color: var(--accent); }
     border-top: 1px solid var(--border);
 }
 .fb-footer-copy { font-size: 11px; color: var(--muted); }
+
+/* Minimal copyright-only footer for utility pages (alerts, profile, settings) */
+.sb-page-footer {
+    margin-top: 32px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    text-align: center;
+    font-size: 11px;
+    color: var(--muted);
+}
 
 /* ─── Responsive ──────────────────────────── */
 @media (max-width: 991.98px) {

@@ -21,11 +21,22 @@ $unreadToday = (int)$utstmt->fetchColumn();
 $lastAlertDirection = $lastAlert ? alertDirection($lastAlert['metadata'] ?? null) : null;
 
 function sbTimeAgo(string $datetime): string {
-    $diff = time() - strtotime($datetime);
-    if ($diff < 60)   return 'just now';
-    if ($diff < 3600) return floor($diff / 60) . ' min ago';
-    if ($diff < 86400) return floor($diff / 3600) . ' hr ago';
-    return floor($diff / 86400) . ' day' . (floor($diff / 86400) == 1 ? '' : 's') . ' ago';
+    // detected_at is stored as UTC-naive; parse it as UTC explicitly instead of
+    // relying on the server's default timezone (strtotime() would otherwise
+    // misinterpret it, skewing the computed diff by hours).
+    $eventTime = (new DateTime($datetime, new DateTimeZone('UTC')))->getTimestamp();
+    $diff = time() - $eventTime;
+    if ($diff < 60) return 'Just now';
+    if ($diff < 3600) {
+        $mins = floor($diff / 60);
+        return $mins . ' min' . ($mins == 1 ? '' : 's') . ' ago';
+    }
+    if ($diff < 86400) {
+        $hrs = floor($diff / 3600);
+        return $hrs . ' hr' . ($hrs == 1 ? '' : 's') . ' ago';
+    }
+    $days = floor($diff / 86400);
+    return $days . ' day' . ($days == 1 ? '' : 's') . ' ago';
 }
 
 $features = [
@@ -83,7 +94,7 @@ $developers = [
         </a>
         <?php else: ?>
         <div class="fb-status-recent">
-            <i class="bi bi-check-circle"></i> All quiet — no alerts detected yet
+            <i class="bi bi-check-circle"></i> All Quiet — No Alerts Detected Yet
         </div>
         <?php endif; ?>
         <?php if ($unreadToday > 0): ?>
@@ -96,8 +107,8 @@ $developers = [
             <div class="fb-hero-eyebrow">Welcome back, <?= htmlspecialchars($user['name']) ?></div>
             <h1 class="fb-hero-title">SonoBand</h1>
             <p class="fb-hero-desc">
-                A wearable sound-alert companion designed for the hearing-impaired community.
-                SonoBand listens to the world around you and turns critical sounds into
+                A wearable sound-alert companion designed for congenitally deaf and non-speaking
+                individuals. SonoBand listens to the world around you and turns critical sounds into
                 instant alerts you can feel and see.
             </p>
         </div>
@@ -160,7 +171,7 @@ $developers = [
         <div class="fb-footer-brand">
             <img src="<?= BASE_URL ?>/assets/images/logo.png" alt="SonoBand" class="fb-footer-brand-logo"> SonoBand
         </div>
-        <div class="fb-footer-tagline">IoT Sound Alert System for the Hearing Impaired</div>
+        <div class="fb-footer-tagline">IoT Sound Alert System for the Congenitally Deaf and Non-Speaking Individuals</div>
         <nav class="fb-footer-links">
             <a href="<?= BASE_URL ?>/user/dashboard.php"><i class="bi bi-house-door-fill"></i> Dashboard</a>
             <a href="<?= BASE_URL ?>/user/alerts.php"><i class="bi bi-bell-fill"></i> Alert History</a>

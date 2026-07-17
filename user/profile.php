@@ -68,6 +68,8 @@ $totalAlerts = (int)db()->query("SELECT COUNT(*) FROM alerts WHERE user_id=$uid"
         </div>
     </div>
 
+    <footer class="sb-page-footer">&copy; <?= date('Y') ?> SonoBand. All rights reserved.</footer>
+
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

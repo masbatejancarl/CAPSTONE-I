@@ -212,7 +212,9 @@ $hiUsers = db()->query("SELECT id, name FROM users WHERE role='user' ORDER BY na
                             <?= htmlspecialchars($row['user_name']) ?>
                         </span>
                         <span><i class="bi bi-clock"></i> <?= toManilaTime($row['detected_at'], 'h:i A') ?></span>
-                        <span><i class="bi bi-soundwave"></i> <?= $row['decibel_level'] ? number_format($row['decibel_level'], 1) . ' dB' : '—' ?></span>
+                        <?php if ($row['decibel_level']): ?>
+                        <span><i class="bi bi-soundwave"></i> <?= number_format($row['decibel_level'], 1) ?> dB</span>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
