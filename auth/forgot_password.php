@@ -46,22 +46,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === 'find_em
         $error = 'Passwords do not match.';
         $step  = 'set_password';
     } else {
-        $stmt = db()->prepare("SELECT id, name, role FROM users WHERE email = ?");
+            $stmt = db()->prepare("SELECT id, name, role, password FROM users WHERE email = ?");
         $stmt->execute([$email]);
         $user = $stmt->fetch();
 
-        if (!$user) {
+            if (!$user) {
             $error = 'Session expired. Please enter your email again.';
         } else {
-            $hash = password_hash($password, PASSWORD_DEFAULT);
-            $upd  = db()->prepare("UPDATE users SET password = ? WHERE id = ?");
-            $upd->execute([$hash, $user['id']]);
+                // Prevent resetting to the same password value as currently stored
+                $currentHash = $user['password'] ?? '';
+                if ($currentHash && passwordMatches($password, $currentHash)) {
+                    $error = 'New password must be different from the current password.';
+                    $step  = 'set_password';
+                } else {
+                    $hash = password_hash($password, PASSWORD_DEFAULT);
+                    $upd  = db()->prepare("UPDATE users SET password = ? WHERE id = ?");
+                    $upd->execute([$hash, $user['id']]);
 
-            logAuditEvent((int)$user['id'], $user['name'], $email, $user['role'], 'password_reset');
-            unset($_SESSION['fp_email']);
+                    logAuditEvent((int)$user['id'], $user['name'], $email, $user['role'], 'password_reset');
+                    unset($_SESSION['fp_email']);
 
-            header('Location: ' . BASE_URL . '/auth/login.php?reset=1');
-            exit;
+                    header('Location: ' . BASE_URL . '/auth/login.php?reset=1');
+                    exit;
+                }
         }
     }
 } elseif (($_SESSION['fp_email'] ?? '') !== '') {

@@ -8,7 +8,7 @@ $user = currentUser();
 $cid  = (int)$user['id'];
 
 $pstmt = db()->prepare(
-    "SELECT u.id, u.name FROM caregiver_links cl
+    "SELECT u.id, u.name, u.avatar_url FROM caregiver_links cl
      JOIN users u ON u.id = cl.patient_id
      WHERE cl.caregiver_id = ? ORDER BY u.name"
 );
@@ -23,9 +23,8 @@ $todayAlerts  = 0;
 $directionInfo = [
     'left'    => ['Sound Detected Left',              'var(--info)'],
     'right'   => ['Sound Detected Right',             'var(--warning)'],
-    'unknown' => ['Sound Detected — Unknown Direction', 'var(--muted)'],
 ];
-$directionCounts = ['left' => 0, 'right' => 0, 'unknown' => 0];
+$directionCounts = ['left' => 0, 'right' => 0];
 
 if ($patientIds) {
     $placeholders = implode(',', array_fill(0, count($patientIds), '?'));
@@ -48,7 +47,8 @@ if ($patientIds) {
     $stmt = db()->prepare("SELECT metadata FROM alerts WHERE user_id IN ($placeholders)");
     $stmt->execute($patientIds);
     foreach ($stmt->fetchAll() as $m) {
-        $directionCounts[alertDirection($m['metadata'] ?? null) ?? 'unknown']++;
+        $direction = alertDirection($m['metadata'] ?? null);
+        if ($direction) $directionCounts[$direction]++;
     }
 }
 $directionCounts = array_filter($directionCounts);
@@ -72,8 +72,8 @@ $directionCounts = array_filter($directionCounts);
 
     <div class="sb-page-header">
         <div>
-            <div class="sb-page-title"><i class="bi bi-grid-1x2-fill"></i> Caregiver Dashboard</div>
-            <div class="sb-page-sub">Welcome back, <?= htmlspecialchars($user['name']) ?></div>
+            <div class="sb-page-title"><i class="bi bi-person-heart"></i> Care Network</div>
+            <div class="sb-page-sub">Monitoring workspace for <?= htmlspecialchars($user['name']) ?></div>
         </div>
         <span class="sb-clock" id="sb-clock"></span>
     </div>
@@ -153,7 +153,7 @@ $directionCounts = array_filter($directionCounts);
             <?php foreach ($patients as $p): ?>
             <div class="sb-user-card">
                 <div class="sb-user-card-top">
-                    <div class="sb-avatar sb-avatar-md"><?= strtoupper(substr($p['name'], 0, 1)) ?></div>
+                    <?= renderAvatar($p['name'], $p['avatar_url'] ?? null, 'sb-avatar-lg') ?>
                 </div>
                 <div class="sb-user-card-name"><?= htmlspecialchars($p['name']) ?></div>
                 <a href="alerts.php?patient_id=<?= $p['id'] ?>" class="sb-user-card-stat">

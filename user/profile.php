@@ -7,7 +7,7 @@ requireRole('user');
 $user = currentUser();
 $uid  = (int)$user['id'];
 
-$stmt = db()->prepare("SELECT name, email, role, created_at FROM users WHERE id = ?");
+$stmt = db()->prepare("SELECT name, email, role, created_at, avatar_url FROM users WHERE id = ?");
 $stmt->execute([$uid]);
 $profile = $stmt->fetch();
 
@@ -37,9 +37,7 @@ $totalAlerts = (int)db()->query("SELECT COUNT(*) FROM alerts WHERE user_id=$uid"
 
     <div class="sb-card" style="max-width:520px">
         <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
-            <div class="sb-avatar" style="width:52px;height:52px;font-size:20px;border-radius:8px">
-                <?= strtoupper(substr($profile['name'], 0, 1)) ?>
-            </div>
+            <?= renderAvatar($profile['name'], $profile['avatar_url'] ?? null, 'sb-avatar-lg sb-profile-avatar') ?>
             <div>
                 <div style="font-size:16px;font-weight:700;color:var(--text)"><?= htmlspecialchars($profile['name']) ?></div>
                 <div style="font-size:12px;color:var(--muted)"><?= htmlspecialchars($profile['email']) ?></div>

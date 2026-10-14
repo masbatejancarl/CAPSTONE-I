@@ -160,7 +160,7 @@ if ($caregiverIds) {
         <?php foreach ($users as $row): ?>
         <div class="sb-user-card">
             <div class="sb-user-card-top">
-                <div class="sb-avatar sb-avatar-md"><?= strtoupper(substr($row['name'], 0, 1)) ?></div>
+                <?= renderAvatar($row['name'], $row['avatar_url'] ?? null, 'sb-avatar-lg') ?>
                 <span class="sb-status sb-role-badge sb-role-<?= $row['role'] ?>"><?= ucfirst($row['role']) ?></span>
             </div>
             <div class="sb-user-card-name"><?= htmlspecialchars($row['name']) ?></div>
@@ -223,14 +223,23 @@ if ($caregiverIds) {
     <?php if ($totalPages > 1): ?>
     <div class="sb-pagination">
         <?php if ($page > 1): ?>
-            <a href="?<?= http_build_query(array_merge($_GET, ['page' => $page - 1])) ?>" class="sb-page-link">‹</a>
+                <a href="?<?= http_build_query(array_merge($_GET, ['page' => $page - 1])) ?>" class="sb-page-link" aria-label="Previous page">‹</a>
         <?php endif; ?>
-        <?php for ($p = 1; $p <= $totalPages; $p++): ?>
+            <?php
+                $pageNumbers = [1, $totalPages];
+                for ($p = max(1, $page - 2); $p <= min($totalPages, $page + 2); $p++) $pageNumbers[] = $p;
+                $pageNumbers = array_values(array_unique($pageNumbers));
+                sort($pageNumbers);
+                $previousPage = 0;
+            ?>
+            <?php foreach ($pageNumbers as $p): ?>
+                <?php if ($previousPage && $p > $previousPage + 1): ?><span class="sb-page-ellipsis" aria-hidden="true">...</span><?php endif; ?>
             <a href="?<?= http_build_query(array_merge($_GET, ['page' => $p])) ?>"
-               class="sb-page-link <?= $p === $page ? 'active' : '' ?>"><?= $p ?></a>
-        <?php endfor; ?>
+                   class="sb-page-link <?= $p === $page ? 'active' : '' ?>" <?= $p === $page ? 'aria-current="page"' : '' ?>><?= $p ?></a>
+                <?php $previousPage = $p; ?>
+            <?php endforeach; ?>
         <?php if ($page < $totalPages): ?>
-            <a href="?<?= http_build_query(array_merge($_GET, ['page' => $page + 1])) ?>" class="sb-page-link">›</a>
+                <a href="?<?= http_build_query(array_merge($_GET, ['page' => $page + 1])) ?>" class="sb-page-link" aria-label="Next page">›</a>
         <?php endif; ?>
     </div>
     <?php endif; ?>

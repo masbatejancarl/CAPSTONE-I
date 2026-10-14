@@ -14,15 +14,39 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS alerts (
     id             SERIAL PRIMARY KEY,
     user_id        INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    sound_type     VARCHAR(50) NOT NULL,
-    decibel_level  FLOAT,
-    location       VARCHAR(10) DEFAULT 'indoor'
-                   CHECK (location IN ('indoor', 'outdoor')),
+    sound_type     VARCHAR(50),
+    alert_type     VARCHAR(10) NOT NULL DEFAULT 'medium'
+                   CHECK (alert_type IN ('critical', 'high', 'medium', 'low')),
     status         VARCHAR(10) DEFAULT 'unread'
                    CHECK (status IN ('unread', 'read')),
     detected_at    TIMESTAMP DEFAULT NOW(),
     metadata       TEXT
 );
+
+-- Keep an existing alerts table compatible with the current alert payload.
+ALTER TABLE alerts ALTER COLUMN sound_type DROP NOT NULL;
+ALTER TABLE alerts ADD COLUMN IF NOT EXISTS alert_type VARCHAR(10);
+ALTER TABLE alerts DROP COLUMN IF EXISTS decibel_level;
+ALTER TABLE alerts DROP COLUMN IF EXISTS location;
+UPDATE alerts
+SET alert_type = 'medium'
+WHERE alert_type IS NULL
+   OR alert_type NOT IN ('critical', 'high', 'medium', 'low');
+ALTER TABLE alerts ALTER COLUMN alert_type SET DEFAULT 'medium';
+ALTER TABLE alerts ALTER COLUMN alert_type SET NOT NULL;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+                WHERE conname IN ('alerts_alert_type_check', 'alerts_type_check')
+                    AND conrelid = 'alerts'::regclass
+    ) THEN
+        ALTER TABLE alerts
+            ADD CONSTRAINT alerts_alert_type_check
+            CHECK (alert_type IN ('critical', 'high', 'medium', 'low'));
+    END IF;
+END $$;
 
 -- Links a caregiver account to the hearing-impaired user(s) they monitor.
 CREATE TABLE IF NOT EXISTS caregiver_links (
@@ -43,6 +67,19 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     ip_address  VARCHAR(45),
     created_at  TIMESTAMP DEFAULT NOW()
 );
+
+-- Keep audit history limited to supported authentication events.
+UPDATE audit_logs
+SET action = LOWER(action)
+WHERE LOWER(action) IN ('login', 'logout', 'login_failed', 'password_reset');
+
+DELETE FROM audit_logs
+WHERE action NOT IN ('login', 'logout', 'login_failed', 'password_reset');
+
+ALTER TABLE audit_logs DROP CONSTRAINT IF EXISTS audit_logs_action_check;
+ALTER TABLE audit_logs
+    ADD CONSTRAINT audit_logs_action_check
+    CHECK (action IN ('login', 'logout', 'login_failed', 'password_reset'));
 
 CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at DESC);
 

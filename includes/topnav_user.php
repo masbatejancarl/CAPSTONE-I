@@ -23,7 +23,7 @@ $notifications = $nstmt->fetchAll();
 
 $currentPage = basename($_SERVER['PHP_SELF']);
 ?>
-<header class="fb-nav">
+<header class="fb-nav role-user">
     <a href="<?= BASE_URL ?>/user/dashboard.php" class="fb-nav-brand">
         <img src="<?= BASE_URL ?>/assets/images/logo.png" alt="SonoBand" class="fb-nav-brand-logo">
         <span>SonoBand</span>
@@ -33,11 +33,11 @@ $currentPage = basename($_SERVER['PHP_SELF']);
         <a href="<?= BASE_URL ?>/user/dashboard.php"
            class="fb-nav-item <?= $currentPage === 'dashboard.php' ? 'active' : '' ?>"
            title="Dashboard" id="fbHomeLink">
-            <span>Home</span>
+            <span>Overview</span>
         </a>
 
         <button type="button" class="fb-nav-item" id="fbNotifBtn" title="Notifications">
-            <span>Notification</span>
+            <span>Alerts</span>
             <span class="fb-badge" id="fbNotifBadge" <?= $unread > 0 ? '' : 'style="display:none"' ?>><?= $unread > 99 ? '99+' : $unread ?></span>
             <div class="fb-dropdown fb-notif-panel" id="fbNotifDropdown">
                 <div class="fb-dropdown-header"><div class="name">Notifications — Today</div></div>
@@ -50,6 +50,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                 <?php else: ?>
                     <?php foreach ($notifications as $n):
                         $dir = alertDirection($n['metadata'] ?? null);
+                        $soundType = soundTypeLabel($n['sound_type'] ?? null);
                     ?>
                         <div class="fb-notif-item <?= $n['status'] === 'unread' ? 'unread' : '' ?>" data-alert-id="<?= $n['id'] ?>">
                             <div class="fb-notif-icon">
@@ -57,9 +58,8 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                             </div>
                             <div class="fb-notif-text">
                                 <div class="fb-notif-title"><?= htmlspecialchars(directionLabel($dir)) ?></div>
-                                <?php if ($n['decibel_level']): ?>
-                                <div><?= number_format($n['decibel_level'], 1) ?> dB</div>
-                                <?php endif; ?>
+                                <div><?= htmlspecialchars($soundType) ?></div>
+                                <div><?= htmlspecialchars(alertTypeLabel(alertSeverity($n['alert_type'] ?? null))) ?></div>
                                 <div class="fb-notif-time"><?= toManilaTime($n['detected_at'], 'M d, Y H:i') ?></div>
                             </div>
                         </div>
@@ -73,7 +73,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
 
     <div class="fb-nav-right">
         <div class="fb-nav-account" id="fbAccountBtn">
-            <div class="sb-avatar sb-avatar-md"><?= strtoupper(substr($user['name'], 0, 1)) ?></div>
+            <?= renderAvatar($user['name'], $user['avatar_url'] ?? null, 'sb-avatar-44') ?>
             <i class="bi bi-caret-down-fill" style="font-size:9px;color:var(--muted)"></i>
             <div class="fb-dropdown" id="fbAccountDropdown">
                 <a href="<?= BASE_URL ?>/user/profile.php" class="fb-dropdown-header fb-dropdown-header-link">
@@ -147,13 +147,16 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             right: 'Sound Detected Right',
         };
         list.innerHTML = data.notifications.map(n => {
-            const icon  = dirIcons[n.direction] || 'bi-question-circle';
-            const label = dirLabels[n.direction] || 'Sound Detected — Unknown Direction';
+            const icon  = dirIcons[n.direction] || 'bi-bell-fill';
+            const label = dirLabels[n.direction] || 'Sound Detected';
+            const soundType = n.sound_type || 'Detected Sound';
+            const alertType = n.alert_type ? n.alert_type.charAt(0).toUpperCase() + n.alert_type.slice(1) : 'Medium';
             return `<div class="fb-notif-item ${n.status === 'unread' ? 'unread' : ''}" data-alert-id="${n.id}">
                 <div class="fb-notif-icon"><i class="bi ${icon}"></i></div>
                 <div class="fb-notif-text">
                     <div class="fb-notif-title">${label}</div>
-                    ${n.decibel ? `<div>${n.decibel}</div>` : ''}
+                    <div>${soundType}</div>
+                    <div>${alertType}</div>
                     <div class="fb-notif-time">${n.detected_at}</div>
                 </div>
             </div>`;
@@ -198,7 +201,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                         right: 'Sound Detected Right',
                         both: 'Sound Detected Both Sides',
                     };
-                    new Notification('SonoBand Alert', { body: dirLabels[data.notifications[0].direction] || 'Sound Detected — Unknown Direction' });
+                    new Notification('SonoBand Alert', { body: dirLabels[data.notifications[0].direction] || 'Sound Detected' });
                 }
                 lastSeenId = newestId;
                 renderNotifications(data);

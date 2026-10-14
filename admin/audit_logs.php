@@ -58,38 +58,41 @@ $offset = ($page - 1) * $limit;
 
 $where  = ['1=1'];
 $params = [];
-if ($filterAction) { $where[] = 'action = ?'; $params[] = $filterAction; }
-if ($filterRole)   { $where[] = 'role = ?';   $params[] = $filterRole; }
+if ($filterAction) { $where[] = 'al.action = ?'; $params[] = $filterAction; }
+if ($filterRole)   { $where[] = 'al.role = ?';   $params[] = $filterRole; }
 
 if ($filterYear) {
-    $where[] = "to_char(created_at, 'YYYY') = ?";
+    $where[] = "to_char(al.created_at, 'YYYY') = ?";
     $params[] = $filterYear;
 }
 if ($fromMonth && $toMonth) {
-    $where[] = "to_char(created_at, 'MM') BETWEEN ? AND ?";
+    $where[] = "to_char(al.created_at, 'MM') BETWEEN ? AND ?";
     $params[] = $fromMonth;
     $params[] = $toMonth;
 } elseif ($fromMonth) {
-    $where[] = "to_char(created_at, 'MM') >= ?";
+    $where[] = "to_char(al.created_at, 'MM') >= ?";
     $params[] = $fromMonth;
 } elseif ($toMonth) {
-    $where[] = "to_char(created_at, 'MM') <= ?";
+    $where[] = "to_char(al.created_at, 'MM') <= ?";
     $params[] = $toMonth;
 }
 if ($search) {
     $like    = "%$search%";
-    $where[] = '(user_name ILIKE ? OR user_email ILIKE ?)';
+    $where[] = '(al.user_name ILIKE ? OR al.user_email ILIKE ?)';
     $params[] = $like;
     $params[] = $like;
 }
 $whereSQL = 'WHERE ' . implode(' AND ', $where);
 
-$cstmt = db()->prepare("SELECT COUNT(*) FROM audit_logs $whereSQL");
+$cstmt = db()->prepare("SELECT COUNT(*) FROM audit_logs al $whereSQL");
 $cstmt->execute($params);
 $totalRows  = (int)$cstmt->fetchColumn();
 $totalPages = (int)ceil($totalRows / $limit);
 
-$dstmt = db()->prepare("SELECT * FROM audit_logs $whereSQL ORDER BY created_at DESC LIMIT $limit OFFSET $offset");
+$dstmt = db()->prepare(
+    "SELECT al.* FROM audit_logs al
+     $whereSQL ORDER BY al.created_at DESC LIMIT $limit OFFSET $offset"
+);
 $dstmt->execute($params);
 $logs = $dstmt->fetchAll();
 
@@ -232,7 +235,7 @@ $actionMeta = [
             <div class="sb-timeline-group">
         <?php endif; ?>
 
-            <div class="sb-timeline-item">
+            <div class="sb-timeline-item audit-log-item">
                 <div class="sb-timeline-node <?= $meta[1] ?>">
                     <i class="bi <?= $meta[0] ?>"></i>
                 </div>
@@ -244,13 +247,8 @@ $actionMeta = [
                         </span>
                     </div>
                     <div class="sb-timeline-meta">
-                        <span>
-                            <span class="sb-avatar sb-avatar-sm"><?= strtoupper(substr($row['user_name'] ?: '?', 0, 1)) ?></span>
-                            <?= htmlspecialchars($row['user_name'] ?: 'Unknown') ?>
-                        </span>
-                        <span><i class="bi bi-envelope"></i> <?= htmlspecialchars($row['user_email'] ?: '—') ?></span>
+                        <span><i class="bi bi-person"></i> <?= htmlspecialchars($row['user_name'] ?: 'Unknown') ?></span>
                         <span><i class="bi bi-clock"></i> <?= toManilaTime($row['created_at'], 'h:i A') ?></span>
-                        <span><i class="bi bi-geo-alt"></i> <?= htmlspecialchars($row['ip_address'] ?: 'Unknown IP') ?></span>
                     </div>
                 </div>
             </div>
@@ -261,14 +259,29 @@ $actionMeta = [
         <?php if ($totalPages > 1): ?>
         <div class="sb-pagination">
             <?php if ($page > 1): ?>
-                <a href="?<?= http_build_query(array_merge($_GET, ['page' => $page - 1])) ?>" class="sb-page-link">‹</a>
+                <a href="?<?= http_build_query(array_merge($_GET, ['page' => $page - 1])) ?>" class="sb-page-link" aria-label="Previous page">‹</a>
             <?php endif; ?>
-            <?php for ($p = 1; $p <= $totalPages; $p++): ?>
+
+            <?php
+                $pageNumbers = [1, $totalPages];
+                for ($p = max(1, $page - 2); $p <= min($totalPages, $page + 2); $p++) {
+                    $pageNumbers[] = $p;
+                }
+                $pageNumbers = array_values(array_unique($pageNumbers));
+                sort($pageNumbers);
+                $previousPage = 0;
+            ?>
+            <?php foreach ($pageNumbers as $p): ?>
+                <?php if ($previousPage && $p > $previousPage + 1): ?>
+                    <span class="sb-page-ellipsis" aria-hidden="true">...</span>
+                <?php endif; ?>
                 <a href="?<?= http_build_query(array_merge($_GET, ['page' => $p])) ?>"
-                   class="sb-page-link <?= $p === $page ? 'active' : '' ?>"><?= $p ?></a>
-            <?php endfor; ?>
+                   class="sb-page-link <?= $p === $page ? 'active' : '' ?>"
+                   <?= $p === $page ? 'aria-current="page"' : '' ?>><?= $p ?></a>
+                <?php $previousPage = $p; ?>
+            <?php endforeach; ?>
             <?php if ($page < $totalPages): ?>
-                <a href="?<?= http_build_query(array_merge($_GET, ['page' => $page + 1])) ?>" class="sb-page-link">›</a>
+                <a href="?<?= http_build_query(array_merge($_GET, ['page' => $page + 1])) ?>" class="sb-page-link" aria-label="Next page">›</a>
             <?php endif; ?>
         </div>
         <?php endif; ?>

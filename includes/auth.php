@@ -1,5 +1,6 @@
 <?php
 session_start();
+require_once __DIR__ . '/storage.php';
 
 // detected_at/created_at are stored in UTC (Postgres NOW()); convert to Philippine Time for display.
 function toManilaTime(string $utcDatetime, string $format): string {
@@ -37,10 +38,26 @@ function requireRole($role) {
 
 function currentUser() {
     return [
-        'id'   => $_SESSION['user_id'] ?? null,
-        'name' => $_SESSION['name'] ?? '',
-        'role' => $_SESSION['role'] ?? '',
+        'id'         => $_SESSION['user_id'] ?? null,
+        'name'       => $_SESSION['name'] ?? '',
+        'role'       => $_SESSION['role'] ?? '',
+        'avatar_url' => $_SESSION['avatar_url'] ?? null,
     ];
+}
+
+// Renders a user's avatar as their uploaded photo, or a letter-initial
+// fallback when no photo has been set.
+function renderAvatar(string $name, ?string $avatarUrl, string $class = ''): string {
+    $classes = trim('sb-avatar ' . $class . ($avatarUrl ? ' sb-avatar-photo' : ''));
+    if ($avatarUrl) {
+        return sprintf(
+            '<span class="%s" style="background-image:url(\'%s\')"></span>',
+            htmlspecialchars($classes),
+            htmlspecialchars($avatarUrl, ENT_QUOTES)
+        );
+    }
+    $initial = $name !== '' ? strtoupper(substr($name, 0, 1)) : '?';
+    return sprintf('<span class="%s">%s</span>', htmlspecialchars($classes), htmlspecialchars($initial));
 }
 
 function passwordMatches(string $password, string $hash): bool {
@@ -99,7 +116,7 @@ function isGmailAddress(string $email): bool {
 
 const NAME_PATTERN_ATTR  = '[A-Za-z ]+';
 const NAME_PATTERN_TITLE = 'Letters and spaces only';
-const EMAIL_PATTERN_ATTR  = '[A-Za-z0-9]([A-Za-z0-9._-]*[A-Za-z0-9])?@gmail\.com';
+const EMAIL_PATTERN_ATTR  = '[A-Za-z0-9]([A-Za-z0-9._\\-]*[A-Za-z0-9])?@gmail\.com';
 const EMAIL_PATTERN_TITLE = 'Must be a Gmail address, e.g. juan.delacruz@gmail.com';
 
 function namePolicyMessage(): string {
@@ -110,8 +127,14 @@ function emailPolicyMessage(): string {
     return 'Email must be a Gmail address, e.g. juan.delacruz@gmail.com.';
 }
 
-// Records a login / logout / login_failed event to the audit_logs table.
+const AUDIT_LOG_ACTIONS = ['login', 'logout', 'login_failed', 'password_reset'];
+
+// Records supported authentication events in the audit_logs table.
 function logAuditEvent(?int $userId, string $name, string $email, string $role, string $action): void {
+    if (!in_array($action, AUDIT_LOG_ACTIONS, true)) {
+        return;
+    }
+
     $ip = $_SERVER['REMOTE_ADDR'] ?? null;
     $stmt = db()->prepare(
         "INSERT INTO audit_logs (user_id, user_name, user_email, role, action, ip_address)
@@ -120,21 +143,138 @@ function logAuditEvent(?int $userId, string $name, string $email, string $role, 
     $stmt->execute([$userId, $name, $email, $role, $action, $ip]);
 }
 
+// ::1 / 127.0.0.1 mean the request came from the same machine the server runs
+// on (e.g. testing locally via XAMPP) — show that plainly instead of a raw IP.
+function formatIpAddress(?string $ip): string {
+    if (!$ip) return 'Unknown IP';
+    return in_array($ip, ['::1', '127.0.0.1'], true) ? 'This Device' : $ip;
+}
+
 // Reads the left/right mic direction out of an alert row's `metadata` column.
-// Accepts either a JSON object like {"direction":"left"} or a bare "left"/"right" string,
-// since different producers (ESP32 firmware, the React app) have written it either way.
+// Different producers store it in different formats, including JSON, raw text,
+// or strings like "Direction: left | Amplitude: 3488". We only care about the direction.
 function alertDirection(?string $metadataValue): ?string {
     if (!$metadataValue) return null;
-    $meta = json_decode($metadataValue, true);
-    $dir  = is_array($meta) ? ($meta['direction'] ?? null) : trim($metadataValue);
+
+    $raw = trim((string)$metadataValue);
+    if ($raw === '') return null;
+
+    $meta = json_decode($raw, true);
+    if (is_array($meta) && isset($meta['direction'])) {
+        $raw = (string)$meta['direction'];
+    }
+
+    if (preg_match('/\b(direction|dir)\s*[:=]\s*(left|right|both|l|r)\b/i', $raw, $matches)) {
+        $raw = $matches[2];
+    } elseif (preg_match('/\b(left|right|both|l|r)\b/i', $raw, $matches)) {
+        $raw = $matches[1];
+    }
+
+    $dir = strtolower((string)$raw);
+    // The ESP32 firmware sometimes sends the shorthand 'l'/'r' instead of the full word.
+    $dir = match ($dir) { 'l' => 'left', 'r' => 'right', default => $dir };
     return in_array($dir, ['left', 'right'], true) ? $dir : null;
+}
+
+function alertType(?string $type): string {
+    $type = strtolower(trim((string)$type));
+    return in_array($type, ['critical', 'high', 'medium', 'low'], true) ? $type : 'medium';
+}
+
+function alertTypeLabel(?string $type): string {
+    return ucfirst(alertType($type));
+}
+
+function soundTypeCatalog(): array {
+    return [
+        'fire_alarm' => ['label' => 'Fire Alarm Bell'],
+        'emergency_siren' => ['label' => 'Emergency Siren'],
+        'fallen_object' => ['label' => 'Fallen Object'],
+        'glass_breaking' => ['label' => 'Glass Breaking'],
+        'baby_crying' => ['label' => 'Baby Crying'],
+        'vehicle_horn' => ['label' => 'Vehicle Horn'],
+        'dog_barking' => ['label' => 'Dog Barking'],
+        'doorbell' => ['label' => 'Doorbell'],
+        'alarm_clock' => ['label' => 'Alarm Clock'],
+        'speech' => ['label' => 'Speech'],
+        'phone_notification' => ['label' => 'Phone Notification'],
+        'door_knock' => ['label' => 'Door Knock'],
+    ];
+}
+
+function soundTypeKey(?string $type): ?string {
+    if ($type === null || trim($type) === '') {
+        return null;
+    }
+
+    $value = trim($type);
+    $decoded = json_decode($value, true);
+    if (is_array($decoded)) {
+        $value = (string)($decoded['sound_type'] ?? $decoded['type'] ?? $value);
+    }
+
+    $key = strtolower(preg_replace('/[^a-zA-Z0-9]+/', '_', trim($value)) ?? $value);
+    return trim($key, '_') ?: null;
+}
+
+function soundTypeLabel(?string $type): string {
+    $key = soundTypeKey($type);
+    if ($key === null) {
+        return 'Detected Sound';
+    }
+
+    $catalog = soundTypeCatalog();
+    if (isset($catalog[$key])) {
+        return $catalog[$key]['label'];
+    }
+
+    $words = explode('_', $key);
+    $label = implode(' ', array_map(fn ($word) => ucfirst($word), $words));
+
+    return $label !== '' ? $label : 'Detected Sound';
+}
+
+function alertSeverity(?string $storedSeverity): string {
+    return alertType($storedSeverity);
+}
+
+function alertSeveritySql(string $alias = ''): string {
+    $prefix = $alias !== '' ? $alias . '.' : '';
+    return "LOWER(COALESCE({$prefix}alert_type, 'medium'))";
+}
+
+function alertTypeOptions(): array {
+    return ['critical', 'high', 'medium', 'low'];
+}
+
+function soundTypeOptionGroups(array $soundTypes): array {
+    $catalog = soundTypeCatalog();
+    $availableGroups = [];
+    foreach ($soundTypes as $soundType) {
+        $value = (string)$soundType;
+        $key = soundTypeKey($value);
+        if ($key === null || !isset($catalog[$key])) {
+            continue;
+        }
+        $availableGroups[$key][] = $value;
+    }
+
+    $groups = [];
+    foreach ($catalog as $key => $soundType) {
+        $groups[$key] = [
+            'label' => $soundType['label'],
+            'values' => $availableGroups[$key] ?? [$key],
+        ];
+    }
+
+    return $groups;
 }
 
 function directionIcon(?string $direction): string {
     return match ($direction) {
         'left'  => 'bi-arrow-left-circle-fill',
         'right' => 'bi-arrow-right-circle-fill',
-        default => 'bi-question-circle',
+        default => 'bi-bell-fill',
     };
 }
 
@@ -142,7 +282,7 @@ function directionLabel(?string $direction): string {
     return match ($direction) {
         'left'  => 'Sound Detected Left',
         'right' => 'Sound Detected Right',
-        default => 'Sound Detected — Unknown Direction',
+        default => 'Sound Detected',
     };
 }
 

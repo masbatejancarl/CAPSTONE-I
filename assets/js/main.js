@@ -59,6 +59,18 @@ document.addEventListener('DOMContentLoaded', () => {
         wrap.appendChild(btn);
     });
 
+    // Ensure Start Tour button shows modal even if main.js initialized later
+    // (modal-specific step handling is implemented inline in the page); here we only
+    // provide a safety hook so any added dynamic Start buttons will trigger the modal.
+    const startBtn = document.getElementById('startOnboard');
+    if (startBtn) {
+        startBtn.addEventListener('click', () => {
+            // No-op here; actual modal show logic is handled in auth/login.php inline script.
+            // This keeps the page resilient if scripts load in different orders.
+            return true;
+        });
+    }
+
     // Live password requirements checklist (10+ chars, upper, lower, special)
     document.querySelectorAll('[data-pw-input]').forEach(input => {
         const checklist = document.getElementById(input.dataset.pwInput);

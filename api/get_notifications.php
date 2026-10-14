@@ -28,8 +28,9 @@ $rows = $nstmt->fetchAll();
 $notifications = array_map(function ($n) {
     return [
         'id'          => (int)$n['id'],
-        'decibel'     => $n['decibel_level'] ? number_format((float)$n['decibel_level'], 1) . ' dB' : null,
         'direction'   => alertDirection($n['metadata'] ?? null),
+        'sound_type'  => soundTypeLabel($n['sound_type'] ?? null),
+        'alert_type'  => alertSeverity($n['alert_type'] ?? null),
         'status'      => $n['status'],
         'detected_at' => toManilaTime($n['detected_at'], 'M d, Y H:i'),
     ];

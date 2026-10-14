@@ -22,13 +22,13 @@ $recent = db()->query(
 $directionInfo = [
     'left'    => ['Sound Detected Left',              'var(--info)'],
     'right'   => ['Sound Detected Right',             'var(--warning)'],
-    'unknown' => ['Sound Detected — Unknown Direction', 'var(--muted)'],
 ];
 
-$directionCounts = ['left' => 0, 'right' => 0, 'unknown' => 0];
+$directionCounts = ['left' => 0, 'right' => 0];
 $metaRows = db()->query("SELECT metadata FROM alerts")->fetchAll();
 foreach ($metaRows as $m) {
-    $directionCounts[alertDirection($m['metadata'] ?? null) ?? 'unknown']++;
+    $direction = alertDirection($m['metadata'] ?? null);
+    if ($direction) $directionCounts[$direction]++;
 }
 $directionCounts = array_filter($directionCounts);
 ?>
@@ -51,8 +51,8 @@ $directionCounts = array_filter($directionCounts);
 
     <div class="sb-page-header">
         <div>
-            <div class="sb-page-title"><i class="bi bi-grid-1x2-fill"></i> System Overview</div>
-            <div class="sb-page-sub">SonoBand Administration</div>
+            <div class="sb-page-title"><i class="bi bi-speedometer2"></i> Control Room</div>
+            <div class="sb-page-sub">SonoBand system operations</div>
         </div>
         <span class="sb-clock" id="sb-clock"></span>
     </div>
@@ -172,23 +172,19 @@ $directionCounts = array_filter($directionCounts);
         <?php endif; ?>
 
             <div class="sb-timeline-item" data-alert-id="<?= $row['id'] ?>">
-                <div class="sb-timeline-node sound-default">
+                <div class="sb-timeline-node signal-<?= htmlspecialchars($direction ?: 'neutral') ?>">
                     <i class="bi <?= directionIcon($direction) ?>"></i>
                 </div>
                 <div class="sb-timeline-content">
                     <div class="sb-timeline-row1">
                         <span class="sb-timeline-title"><?= htmlspecialchars(directionLabel($direction)) ?></span>
+                        <?php $severity = alertSeverity($row['alert_type'] ?? null); ?>
+                        <span class="sb-alert-type <?= $severity ?>"><?= alertTypeLabel($severity) ?></span>
                         <span class="sb-status <?= $row['status'] ?>"><?= ucfirst($row['status']) ?></span>
                     </div>
                     <div class="sb-timeline-meta">
-                        <span>
-                            <span class="sb-avatar sb-avatar-sm"><?= strtoupper(substr($row['user_name'], 0, 1)) ?></span>
-                            <?= htmlspecialchars($row['user_name']) ?>
-                        </span>
+                        <span><i class="bi bi-person"></i> <?= htmlspecialchars($row['user_name']) ?></span>
                         <span><i class="bi bi-clock"></i> <?= toManilaTime($row['detected_at'], 'h:i A') ?></span>
-                        <?php if ($row['decibel_level']): ?>
-                        <span><i class="bi bi-soundwave"></i> <?= number_format($row['decibel_level'], 1) ?> dB</span>
-                        <?php endif; ?>
                     </div>
                 </div>
             </div>

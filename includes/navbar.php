@@ -4,18 +4,18 @@ $role = $user['role'];
 
 $navLinks = [
     'user' => [
-        ['href' => BASE_URL . '/user/dashboard.php', 'icon' => 'bi-grid-1x2-fill', 'label' => 'Dashboard'],
+        ['href' => BASE_URL . '/user/dashboard.php', 'icon' => 'bi-broadcast-pin', 'label' => 'Overview'],
         ['href' => BASE_URL . '/user/alerts.php',    'icon' => 'bi-bell',           'label' => 'Alert History'],
     ],
     'admin' => [
-        ['href' => BASE_URL . '/admin/dashboard.php', 'icon' => 'bi-grid-1x2-fill', 'label' => 'Dashboard'],
+        ['href' => BASE_URL . '/admin/dashboard.php', 'icon' => 'bi-speedometer2', 'label' => 'Control Room'],
         ['href' => BASE_URL . '/admin/users.php',     'icon' => 'bi-people',         'label' => 'Users'],
         ['href' => BASE_URL . '/admin/alerts.php',     'icon' => 'bi-bell',           'label' => 'Alerts'],
         ['href' => BASE_URL . '/admin/audit_logs.php', 'icon' => 'bi-clock-history',  'label' => 'Audit Logs'],
         ['href' => BASE_URL . '/admin/settings.php',   'icon' => 'bi-gear-fill',      'label' => 'Account Settings'],
     ],
     'caregiver' => [
-        ['href' => BASE_URL . '/caregiver/dashboard.php', 'icon' => 'bi-grid-1x2-fill', 'label' => 'Dashboard'],
+        ['href' => BASE_URL . '/caregiver/dashboard.php', 'icon' => 'bi-person-heart', 'label' => 'Care Network'],
         ['href' => BASE_URL . '/caregiver/alerts.php',    'icon' => 'bi-bell',          'label' => 'Alert History'],
         ['href' => BASE_URL . '/caregiver/settings.php',  'icon' => 'bi-gear-fill',     'label' => 'Account Settings'],
     ],
@@ -35,7 +35,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
         SonoBand
     </span>
     <div class="ms-auto">
-        <div class="sb-avatar"><?= strtoupper(substr($user['name'], 0, 1)) ?></div>
+        <?= renderAvatar($user['name'], $user['avatar_url'] ?? null) ?>
     </div>
 </div>
 
@@ -43,7 +43,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
 <div class="sb-overlay" id="sbOverlay" onclick="sbClose()"></div>
 
 <!-- Sidebar -->
-<aside class="sb-sidebar" id="sbSidebar">
+<aside class="sb-sidebar role-<?= htmlspecialchars($role) ?>" id="sbSidebar">
 
     <!-- Brand -->
     <div class="sb-sidebar-brand">
@@ -58,7 +58,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
 
     <!-- User -->
     <div class="sb-sidebar-user">
-        <div class="sb-avatar sb-avatar-md"><?= strtoupper(substr($user['name'], 0, 1)) ?></div>
+        <?= renderAvatar($user['name'], $user['avatar_url'] ?? null, 'sb-avatar-44') ?>
         <div style="min-width:0">
             <div class="sb-sidebar-user-name"><?= htmlspecialchars($user['name']) ?></div>
             <div class="sb-sidebar-user-role"><?= ucfirst($role) ?></div>
@@ -67,7 +67,9 @@ $currentPage = basename($_SERVER['PHP_SELF']);
 
     <!-- Nav links -->
     <nav class="sb-sidebar-nav">
-        <div class="sb-nav-label">Menu</div>
+        <div class="sb-nav-label">
+            <?= $role === 'admin' ? 'Control Room' : ($role === 'caregiver' ? 'Care Network' : 'My SonoBand') ?>
+        </div>
         <?php foreach ($links as $link): ?>
         <a href="<?= $link['href'] ?>"
            class="sb-nav-link <?= basename($link['href']) === $currentPage ? 'active' : '' ?>">

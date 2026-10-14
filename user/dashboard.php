@@ -42,7 +42,7 @@ function sbTimeAgo(string $datetime): string {
 $features = [
     [
         'title' => 'Real-Time Sound Detection',
-        'desc'  => 'SonoBand continuously listens to your surroundings and recognizes critical sounds — doorbells, fire alarms, vehicle horns, emergency sirens, and loud knocks — the instant they happen.',
+        'desc'  =>'SonoBand continuously monitors your surroundings and detects important sounds such as doorbells, fire alarms, vehicle horns, emergency sirens, and loud knocks, then alerts you as soon as they occur.',
         'image' => 'feature-detection.svg',
         'alt'   => 'SonoBand detecting sound in real time',
     ],
@@ -54,7 +54,7 @@ $features = [
     ],
     [
         'title' => 'Built for Everyday Life',
-        'desc'  => 'Lightweight and comfortable for all-day wear, indoors or outdoors. Every alert is saved to your account so you can review your alert history anytime.',
+        'desc'  => 'Designed for everyday use indoors or outdoors. Every alert is saved to your account so you can review your alert history anytime.',
         'image' => 'feature-lifestyle.svg',
         'alt'   => 'SonoBand worn in everyday life',
     ],
@@ -64,6 +64,44 @@ $developers = [
     ['name' => 'Amira Singin',   'role' => 'Developer', 'email' => 'amirasingin@gmail.com', 'image' => 'developer1.jfif'],
     ['name' => 'John Lloyd Christopher Tadipa',   'role' => 'Developer', 'email' => 'johnlloydtadipa@gmail.com', 'image' => 'developer2.jfif'],
     ['name' => 'Jan Carl Masbate', 'role' => 'Developer', 'email' => 'jancarlmasbate@gmail.com', 'image' => 'developer3.jfif'],
+];
+
+$howItWorks = [
+    ['title' => 'Listen',        'desc' => "SonoBand continuously monitors ambient sound through its built-in microphone."],
+    ['title' => 'Detect & Locate', 'desc' => "When a critical sound is picked up, SonoBand identifies which side it came from left or right."],
+    ['title' => 'Alert',         'desc' => "You feel it instantly through vibration and see it through a visual cue on the band."],
+    ['title' => 'Review',        'desc' => "Every alert is saved to your account, so you can check your Alert History anytime."],
+];
+
+$specs = [
+    ['icon' => 'bi-battery-charging', 'label' => 'Rechargeable Battery'],
+    ['icon' => 'bi-bell-fill',        'label' => 'Instant Vibration + Visual Alerts'],
+    ['icon' => 'bi-compass-fill',     'label' => 'Left / Right Sound Direction'],
+    ['icon' => 'bi-cloud-check-fill', 'label' => 'Synced Alert History'],
+    ['icon' => 'bi-house-check-fill', 'label' => 'Indoor & Outdoor Use'],
+];
+
+$faqs = [
+    [
+        'q' => 'What kinds of sounds does SonoBand detect?',
+        'a' => 'SonoBand listens for critical everyday sounds like doorbells, fire alarms, vehicle horns, emergency sirens, and loud knocks, then alerts you as soon as a sound is detected.',
+    ],
+    [
+        'q' => 'How will I know when SonoBand detects something?',
+        'a' => "You'll feel a vibration and see a visual alert on the band immediately, and it's also saved to your Alert History so you can review it anytime.",
+    ],
+    [
+        'q' => 'Can I tell which direction a sound came from?',
+        'a' => 'Yes. SonoBand tells you whether the sound was detected from your left or right side.',
+    ],
+    [
+        'q' => 'Do I need an account to use SonoBand?',
+        'a' => 'Yes, signing in lets SonoBand save your alert history securely so you can look back at past detections anytime.',
+    ],
+    [
+        'q' => 'Who is SonoBand designed for?',
+        'a' => 'SonoBand was designed for congenitally deaf and non-speaking individuals who want to stay aware of important sounds in their environment.',
+    ],
 ];
 ?>
 <!DOCTYPE html>
@@ -125,25 +163,101 @@ $developers = [
         </div>
     </section>
 
-    <?php foreach ($features as $i => $f): ?>
-    <section class="fb-feature <?= $i % 2 === 1 ? 'reverse' : '' ?>">
-        <div class="fb-feature-media">
-            <div class="fb-media">
-                <img src="<?= BASE_URL ?>/assets/images/<?= $f['image'] ?>"
-                     alt="<?= htmlspecialchars($f['alt']) ?>"
-                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                <div class="fb-media-fallback">
-                    <i class="bi bi-image"></i>
-                    <span><?= $f['image'] ?></span>
-                </div>
-            </div>
+    <div id="sonobandFeatures" class="carousel slide fb-feature-carousel" data-bs-ride="carousel" data-bs-pause="hover">
+        <div class="carousel-indicators">
+            <?php foreach ($features as $i => $f): ?>
+            <button type="button" data-bs-target="#sonobandFeatures" data-bs-slide-to="<?= $i ?>"
+                    class="<?= $i === 0 ? 'active' : '' ?>" aria-current="<?= $i === 0 ? 'true' : 'false' ?>"
+                    aria-label="<?= htmlspecialchars($f['title']) ?>"></button>
+            <?php endforeach; ?>
         </div>
-        <div class="fb-feature-text">
-            <h2><?= htmlspecialchars($f['title']) ?></h2>
-            <p><?= htmlspecialchars($f['desc']) ?></p>
+        <div class="carousel-inner">
+            <?php foreach ($features as $i => $f): ?>
+            <div class="carousel-item <?= $i === 0 ? 'active' : '' ?>">
+                <section class="fb-feature">
+                    <div class="fb-feature-media">
+                        <div class="fb-media">
+                            <img src="<?= BASE_URL ?>/assets/images/<?= $f['image'] ?>"
+                                 alt="<?= htmlspecialchars($f['alt']) ?>"
+                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                            <div class="fb-media-fallback">
+                                <i class="bi bi-image"></i>
+                                <span><?= $f['image'] ?></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="fb-feature-text">
+                        <h2><?= htmlspecialchars($f['title']) ?></h2>
+                        <p><?= htmlspecialchars($f['desc']) ?></p>
+                    </div>
+                </section>
+            </div>
+            <?php endforeach; ?>
+        </div>
+        <button class="carousel-control-prev" type="button" data-bs-target="#sonobandFeatures" data-bs-slide="prev">
+            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Previous</span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#sonobandFeatures" data-bs-slide="next">
+            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Next</span>
+        </button>
+    </div>
+
+    <section class="fb-section">
+        <h2 class="fb-section-title">How SonoBand Works</h2>
+        <p class="fb-section-sub">From the moment a sound happens to the moment you know about it.</p>
+        <div class="fb-steps">
+            <?php foreach ($howItWorks as $i => $step): ?>
+            <div class="fb-step">
+                <div class="fb-step-num"><?= $i + 1 ?></div>
+                <div class="fb-step-title"><?= htmlspecialchars($step['title']) ?></div>
+                <div class="fb-step-desc"><?= htmlspecialchars($step['desc']) ?></div>
+            </div>
+            <?php endforeach; ?>
         </div>
     </section>
-    <?php endforeach; ?>
+
+    <section class="fb-section">
+        <h2 class="fb-section-title">Who It's For</h2>
+        <div class="fb-mission-text">
+            <p>SonoBand was built for individuals who are congenitally deaf or non-speaking people who can't rely on hearing sudden, important sounds like a knock at the door, a car horn, or an emergency alarm.</p>
+            <p>Instead of missing these moments, SonoBand turns sound into something you can feel and see so you stay aware, safe, and connected to the world around you, wherever you are.</p>
+        </div>
+    </section>
+
+    <section class="fb-section">
+        <h2 class="fb-section-title">Features at a Glance</h2>
+        <div class="fb-specs">
+            <?php foreach ($specs as $spec): ?>
+            <div class="fb-spec-item">
+                <i class="bi <?= $spec['icon'] ?>"></i>
+                <span class="fb-spec-label"><?= htmlspecialchars($spec['label']) ?></span>
+            </div>
+            <?php endforeach; ?>
+        </div>
+    </section>
+
+    <section class="fb-section">
+        <h2 class="fb-section-title">Frequently Asked Questions</h2>
+        <div class="accordion fb-faq" id="sonobandFaq">
+            <?php foreach ($faqs as $i => $faq): ?>
+            <div class="accordion-item">
+                <h3 class="accordion-header">
+                    <button class="accordion-button <?= $i === 0 ? '' : 'collapsed' ?>" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#faqItem<?= $i ?>"
+                            aria-expanded="<?= $i === 0 ? 'true' : 'false' ?>" aria-controls="faqItem<?= $i ?>">
+                        <?= htmlspecialchars($faq['q']) ?>
+                    </button>
+                </h3>
+                <div id="faqItem<?= $i ?>" class="accordion-collapse collapse <?= $i === 0 ? 'show' : '' ?>"
+                     data-bs-parent="#sonobandFaq">
+                    <div class="accordion-body"><?= htmlspecialchars($faq['a']) ?></div>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        </div>
+    </section>
 
     <section class="fb-contact">
         <h2 class="fb-contact-title">Contact Us</h2>
@@ -168,18 +282,7 @@ $developers = [
     </section>
 
     <footer class="fb-footer">
-        <div class="fb-footer-brand">
-            <img src="<?= BASE_URL ?>/assets/images/logo.png" alt="SonoBand" class="fb-footer-brand-logo"> SonoBand
-        </div>
-        <div class="fb-footer-tagline">IoT Sound Alert System for the Congenitally Deaf and Non-Speaking Individuals</div>
-        <nav class="fb-footer-links">
-            <a href="<?= BASE_URL ?>/user/dashboard.php"><i class="bi bi-house-door-fill"></i> Dashboard</a>
-            <a href="<?= BASE_URL ?>/user/alerts.php"><i class="bi bi-bell-fill"></i> Alert History</a>
-            <a href="<?= BASE_URL ?>/user/settings.php"><i class="bi bi-gear-fill"></i> Account Settings</a>
-        </nav>
-        <div class="fb-footer-bottom">
-            <div class="fb-footer-copy">&copy; <?= date('Y') ?> SonoBand. All rights reserved.</div>
-        </div>
+        <div class="fb-footer-copy">&copy; <?= date('Y') ?> SonoBand. All rights reserved.</div>
     </footer>
 
 </div>

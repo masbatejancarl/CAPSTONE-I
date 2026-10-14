@@ -3,6 +3,7 @@ define('BASE_URL', '/CAPSTONE I');
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../config/db.php';
 requireRole('admin');
+$soundTypeOptions = soundTypeOptionGroups(db()->query("SELECT DISTINCT sound_type FROM alerts WHERE sound_type IS NOT NULL AND sound_type <> '' ORDER BY sound_type")->fetchAll(PDO::FETCH_COLUMN));
 
 $months = [
     '01' => 'January',   '02' => 'February', '03' => 'March',
@@ -14,6 +15,8 @@ $availableYears = range(2024, (int)manilaToday());
 
 $filterDirection = $_GET['direction'] ?? '';
 $filterStatus    = $_GET['status']    ?? '';
+$filterAlertType = $_GET['alert_type'] ?? '';
+$filterSoundType = $_GET['sound_type'] ?? '';
 $filterUser      = (int)($_GET['user_id'] ?? 0);
 $fromMonth    = $_GET['from_month'] ?? '';
 $toMonth      = $_GET['to_month']   ?? '';
@@ -39,6 +42,16 @@ $offset = ($page - 1) * $limit;
 $where  = ['1=1'];
 $params = [];
 if ($filterStatus) { $where[] = 'a.status = ?';  $params[] = $filterStatus; }
+if ($filterAlertType && in_array($filterAlertType, alertTypeOptions(), true)) {
+    $where[] = alertSeveritySql('a') . ' = ?'; $params[] = $filterAlertType;
+}
+if (isset($soundTypeOptions[$filterSoundType])) {
+    $soundTypeValues = $soundTypeOptions[$filterSoundType]['values'];
+    $where[] = 'a.sound_type IN (' . implode(',', array_fill(0, count($soundTypeValues), '?')) . ')';
+    array_push($params, ...$soundTypeValues);
+} else {
+    $filterSoundType = '';
+}
 if ($filterUser)   { $where[] = 'a.user_id = ?'; $params[] = $filterUser; }
 if ($filterDirection) {
     // metadata holds either a bare "left"/"right"/"both" string or JSON like
@@ -106,7 +119,7 @@ $hiUsers = db()->query("SELECT id, name FROM users WHERE role='user' ORDER BY na
 
     <!-- Filters -->
     <div class="sb-filter">
-        <form method="GET" class="row g-2 align-items-end">
+        <form method="GET" class="row g-2 align-items-end alert-filter-form">
             <div class="col-6 col-md-2">
                 <label class="sb-label">Direction</label>
                 <select name="direction" class="form-select sb-input form-select-sm">
@@ -121,6 +134,26 @@ $hiUsers = db()->query("SELECT id, name FROM users WHERE role='user' ORDER BY na
                     <option value="">All</option>
                     <option value="unread" <?= $filterStatus === 'unread' ? 'selected' : '' ?>>Unread</option>
                     <option value="read"   <?= $filterStatus === 'read'   ? 'selected' : '' ?>>Read</option>
+                </select>
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="sb-label">Severity</label>
+                <select name="alert_type" class="form-select sb-input form-select-sm">
+                    <option value="">All</option>
+                    <?php foreach (alertTypeOptions() as $type): ?>
+                    <option value="<?= $type ?>" <?= $filterAlertType === $type ? 'selected' : '' ?>><?= ucfirst($type) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="sb-label">Sound Type</label>
+                <select name="sound_type" class="form-select sb-input form-select-sm">
+                    <option value="">All Sounds</option>
+                    <?php foreach ($soundTypeOptions as $soundTypeKey => $soundTypeOption): ?>
+                    <option value="<?= htmlspecialchars($soundTypeKey) ?>" <?= $filterSoundType === $soundTypeKey ? 'selected' : '' ?>>
+                        <?= htmlspecialchars($soundTypeOption['label']) ?>
+                    </option>
+                    <?php endforeach; ?>
                 </select>
             </div>
             <div class="col-6 col-md-2">
@@ -198,23 +231,20 @@ $hiUsers = db()->query("SELECT id, name FROM users WHERE role='user' ORDER BY na
         <?php endif; ?>
 
             <div class="sb-timeline-item" data-alert-id="<?= $row['id'] ?>">
-                <div class="sb-timeline-node sound-default">
+                <div class="sb-timeline-node signal-<?= htmlspecialchars($direction ?: 'neutral') ?>">
                     <i class="bi <?= directionIcon($direction) ?>"></i>
                 </div>
                 <div class="sb-timeline-content">
                     <div class="sb-timeline-row1">
                         <span class="sb-timeline-title"><?= htmlspecialchars(directionLabel($direction)) ?></span>
+                        <span class="sb-sound-type"><?= htmlspecialchars(soundTypeLabel($row['sound_type'] ?? null)) ?></span>
+                        <?php $severity = alertSeverity($row['alert_type'] ?? null); ?>
+                        <span class="sb-alert-type <?= $severity ?>"><?= alertTypeLabel($severity) ?></span>
                         <span class="sb-status <?= $row['status'] ?>"><?= ucfirst($row['status']) ?></span>
                     </div>
                     <div class="sb-timeline-meta">
-                        <span>
-                            <span class="sb-avatar sb-avatar-sm"><?= strtoupper(substr($row['user_name'], 0, 1)) ?></span>
-                            <?= htmlspecialchars($row['user_name']) ?>
-                        </span>
+                        <span><i class="bi bi-person"></i> <?= htmlspecialchars($row['user_name']) ?></span>
                         <span><i class="bi bi-clock"></i> <?= toManilaTime($row['detected_at'], 'h:i A') ?></span>
-                        <?php if ($row['decibel_level']): ?>
-                        <span><i class="bi bi-soundwave"></i> <?= number_format($row['decibel_level'], 1) ?> dB</span>
-                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -225,14 +255,23 @@ $hiUsers = db()->query("SELECT id, name FROM users WHERE role='user' ORDER BY na
         <?php if ($totalPages > 1): ?>
         <div class="sb-pagination">
             <?php if ($page > 1): ?>
-                <a href="?<?= http_build_query(array_merge($_GET, ['page' => $page - 1])) ?>" class="sb-page-link">‹</a>
+                <a href="?<?= http_build_query(array_merge($_GET, ['page' => $page - 1])) ?>" class="sb-page-link" aria-label="Previous page">‹</a>
             <?php endif; ?>
-            <?php for ($p = 1; $p <= $totalPages; $p++): ?>
+            <?php
+                $pageNumbers = [1, $totalPages];
+                for ($p = max(1, $page - 2); $p <= min($totalPages, $page + 2); $p++) $pageNumbers[] = $p;
+                $pageNumbers = array_values(array_unique($pageNumbers));
+                sort($pageNumbers);
+                $previousPage = 0;
+            ?>
+            <?php foreach ($pageNumbers as $p): ?>
+                <?php if ($previousPage && $p > $previousPage + 1): ?><span class="sb-page-ellipsis" aria-hidden="true">...</span><?php endif; ?>
                 <a href="?<?= http_build_query(array_merge($_GET, ['page' => $p])) ?>"
-                   class="sb-page-link <?= $p === $page ? 'active' : '' ?>"><?= $p ?></a>
-            <?php endfor; ?>
+                   class="sb-page-link <?= $p === $page ? 'active' : '' ?>" <?= $p === $page ? 'aria-current="page"' : '' ?>><?= $p ?></a>
+                <?php $previousPage = $p; ?>
+            <?php endforeach; ?>
             <?php if ($page < $totalPages): ?>
-                <a href="?<?= http_build_query(array_merge($_GET, ['page' => $page + 1])) ?>" class="sb-page-link">›</a>
+                <a href="?<?= http_build_query(array_merge($_GET, ['page' => $page + 1])) ?>" class="sb-page-link" aria-label="Next page">›</a>
             <?php endif; ?>
         </div>
         <?php endif; ?>

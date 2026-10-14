@@ -7,13 +7,44 @@ requireRole('admin');
 $user = currentUser();
 $uid  = (int)$user['id'];
 
-$stmt = db()->prepare("SELECT name, email FROM users WHERE id = ?");
+$stmt = db()->prepare("SELECT name, email, avatar_url FROM users WHERE id = ?");
 $stmt->execute([$uid]);
 $profile = $stmt->fetch();
 
 $error = $success = '';
+$avatarError = $avatarSuccess = '';
+if (!empty($_SESSION['flash_success'])) {
+    $success = $_SESSION['flash_success'];
+    unset($_SESSION['flash_success']);
+}
+if (!empty($_SESSION['flash_error'])) {
+    $error = $_SESSION['flash_error'];
+    unset($_SESSION['flash_error']);
+}
+$formValues = $_SESSION['settings_form'] ?? null;
+unset($_SESSION['settings_form']);
+if (is_array($formValues)) {
+    $profile['name'] = $formValues['name'] ?? $profile['name'];
+    $profile['email'] = $formValues['email'] ?? $profile['email'];
+}
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_avatar'])) {
+    $result = uploadAvatar($uid, $_FILES['avatar'] ?? [], $profile['avatar_url']);
+    if ($result['ok']) {
+        db()->prepare("UPDATE users SET avatar_url = ? WHERE id = ?")->execute([$result['url'], $uid]);
+        $_SESSION['avatar_url'] = $result['url'];
+        $profile['avatar_url']  = $result['url'];
+        $avatarSuccess = 'Profile photo updated successfully.';
+    } else {
+        $avatarError = $result['error'];
+    }
+} elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['remove_avatar'])) {
+    removeAvatar($profile['avatar_url']);
+    db()->prepare("UPDATE users SET avatar_url = NULL WHERE id = ?")->execute([$uid]);
+    $_SESSION['avatar_url'] = null;
+    $profile['avatar_url']  = null;
+    $avatarSuccess = 'Profile photo removed.';
+} elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $name        = trim($_POST['name']         ?? '');
     $email       = trim($_POST['email']        ?? '');
     $currentPass =      $_POST['current_password'] ?? '';
@@ -40,6 +71,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $error = 'Current password is incorrect.';
             } elseif (!isStrongPassword($newPass)) {
                 $error = passwordPolicyMessage();
+            } elseif ($newPass === $currentPass) {
+                $error = 'New password must be different from the current password.';
             } elseif ($newPass !== $confirmPass) {
                 $error = 'New passwords do not match.';
             } else {
@@ -65,6 +98,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $profile['name']  = $name;
         $profile['email'] = $email;
     }
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if ($error || $avatarError) {
+        $_SESSION['flash_error'] = $error ?: $avatarError;
+        if (isset($_POST['name'], $_POST['email'])) {
+            $_SESSION['settings_form'] = ['name' => $_POST['name'], 'email' => $_POST['email']];
+        }
+    } else {
+        $_SESSION['flash_success'] = $success ?: $avatarSuccess;
+    }
+    header('Location: settings.php');
+    exit;
 }
 ?>
 <!DOCTYPE html>
@@ -103,6 +149,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <span><?= htmlspecialchars($success) ?></span>
         </div>
     <?php endif; ?>
+    <?php if ($avatarError): ?>
+        <div class="sb-alert sb-alert-danger">
+            <i class="bi bi-exclamation-circle flex-shrink-0"></i>
+            <span><?= htmlspecialchars($avatarError) ?></span>
+        </div>
+    <?php endif; ?>
+    <?php if ($avatarSuccess): ?>
+        <div class="sb-alert sb-alert-success">
+            <i class="bi bi-check-circle flex-shrink-0"></i>
+            <span><?= htmlspecialchars($avatarSuccess) ?></span>
+        </div>
+    <?php endif; ?>
+
+    <div class="sb-card" style="max-width:520px">
+        <div class="sb-page-sub" style="margin-bottom:12px">Profile Photo</div>
+        <form method="POST" enctype="multipart/form-data" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+            <?= renderAvatar($profile['name'] ?? '', $profile['avatar_url'] ?? null, 'sb-avatar-xl') ?>
+            <div style="flex:1;min-width:220px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+                <input type="file" name="avatar" accept="image/jpeg,image/png,image/webp,.jfif" class="form-control sb-input" style="max-width:260px">
+                <button type="submit" name="upload_avatar" value="1" class="btn sb-btn-primary">
+                    <i class="bi bi-upload"></i> Upload
+                </button>
+                <?php if (!empty($profile['avatar_url'])): ?>
+                <button type="submit" name="remove_avatar" value="1" class="btn sb-btn-outline"
+                        onclick="return confirm('Remove your profile photo?')">
+                    <i class="bi bi-trash3"></i> Remove
+                </button>
+                <?php endif; ?>
+            </div>
+        </form>
+        <div class="sb-modal-sub" style="margin-top:10px">JPG, JFIF, PNG, or WEBP. Max 3MB.</div>
+    </div>
 
     <div class="sb-card" style="max-width:520px">
         <form method="POST" novalidate>
