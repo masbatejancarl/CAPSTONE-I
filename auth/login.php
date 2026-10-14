@@ -45,7 +45,7 @@ $resetSuccess = isset($_GET['reset']);
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link rel="icon" type="image/png" href="<?= BASE_URL ?>/assets/images/favicon.png">
+    <?php renderFavicon(); ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Sign In — SonoBand</title>

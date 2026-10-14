@@ -96,7 +96,7 @@ $hiUsers = db()->query("SELECT id, name FROM users WHERE role='user' ORDER BY na
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link rel="icon" type="image/png" href="<?= BASE_URL ?>/assets/images/favicon.png">
+    <?php renderFavicon(); ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>All Alerts — SonoBand</title>

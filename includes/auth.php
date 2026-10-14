@@ -14,6 +14,10 @@ function assetUrl(string $path): string {
     return BASE_URL . $normalizedPath;
 }
 
+function renderFavicon(): void {
+    echo '<link rel="icon" type="image/png" href="' . htmlspecialchars(BASE_URL . '/assets/images/favicon.png', ENT_QUOTES) . '">' . PHP_EOL;
+}
+
 // detected_at/created_at are stored in UTC (Postgres NOW()); convert to Philippine Time for display.
 function toManilaTime(string $utcDatetime, string $format): string {
     $dt = new DateTime($utcDatetime, new DateTimeZone('UTC'));
