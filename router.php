@@ -1,6 +1,16 @@
 <?php
 // Router for PHP's built-in server. Missing files return 404 instead of falling back to index.php.
 $path = rawurldecode(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?: '/');
+
+if ($path === '/favicon.ico') {
+    $faviconFile = __DIR__ . '/assets/images/favicon.ico';
+    if (is_file($faviconFile)) {
+        header('Content-Type: image/x-icon');
+        readfile($faviconFile);
+        return true;
+    }
+}
+
 $file = realpath(__DIR__ . $path);
 
 if ($path === '/') {
