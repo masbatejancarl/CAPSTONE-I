@@ -1,7 +1,7 @@
 ﻿<?php
 $appBaseUrl = getenv('APP_BASE_URL');
-$isRailway = getenv('RAILWAY_ENVIRONMENT_NAME') !== false || getenv('RAILWAY_PUBLIC_DOMAIN') !== false;
-define('BASE_URL', $isRailway ? '' : rtrim($appBaseUrl !== false ? $appBaseUrl : '/CAPSTONE I', '/'));
+// Kung may APP_BASE_URL gamitin 'yun, kung wala ay gawing empty string '/' para sa production root
+define('BASE_URL', $appBaseUrl !== false ? rtrim($appBaseUrl, '/') : '');
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../config/db.php';
 requireRole('admin');
