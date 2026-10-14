@@ -16,6 +16,7 @@ $totalAlerts = (int)db()->query("SELECT COUNT(*) FROM alerts WHERE user_id=$uid"
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="icon" type="image/png" href="/assets/images/favicon.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>My Profile — SonoBand</title>
