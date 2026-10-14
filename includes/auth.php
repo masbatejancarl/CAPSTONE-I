@@ -15,7 +15,7 @@ function assetUrl(string $path): string {
 }
 
 function renderFavicon(): void {
-    echo '<link rel="icon" type="image/png" href="' . htmlspecialchars(BASE_URL . '/assets/images/favicon.png', ENT_QUOTES) . '">' . PHP_EOL;
+    echo '<link rel="icon" type="image/x-icon" href="' . htmlspecialchars(BASE_URL . '/assets/images/favicon.ico', ENT_QUOTES) . '">' . PHP_EOL;
 }
 
 // detected_at/created_at are stored in UTC (Postgres NOW()); convert to Philippine Time for display.
