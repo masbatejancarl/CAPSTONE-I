@@ -10,6 +10,12 @@ if ($path === '/') {
 
 if ($file !== false && strpos($file, __DIR__) === 0) {
     if (is_file($file)) {
+        // php -S does not read .htaccess, so serve .jfif as JPEG here.
+        if (strtolower(pathinfo($file, PATHINFO_EXTENSION)) === 'jfif') {
+            header('Content-Type: image/jpeg');
+            readfile($file);
+            return true;
+        }
         return false; // serve static file or run the PHP script
     }
     if (is_dir($file) && is_file($file . '/index.php')) {
