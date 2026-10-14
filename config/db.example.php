@@ -5,6 +5,10 @@
 //  values from: Supabase Dashboard → Project Settings → Database
 //  → Connection string. config/db.local.php is gitignored and
 //  must never be committed.
+//
+//  Hosted deployments can set these same names as environment
+//  variables instead. DB_PASS is the database password variable;
+//  DB_PASSWORD is also accepted as an environment-variable alias.
 // ============================================================
 
 const DB_HOST = 'your-project.pooler.supabase.com';
