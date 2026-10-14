@@ -1,8 +1,6 @@
 <?php
 if (!defined('BASE_URL')) {
-    $appBaseUrl = getenv('APP_BASE_URL');
-    $isRailway = getenv('RAILWAY_ENVIRONMENT_NAME') !== false || getenv('RAILWAY_PUBLIC_DOMAIN') !== false;
-    define('BASE_URL', $isRailway ? '' : rtrim(($appBaseUrl !== false && $appBaseUrl !== '') ? $appBaseUrl : '/CAPSTONE I', '/'));
+    define('BASE_URL', '');
 }
 
 session_start();

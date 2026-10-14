@@ -2,9 +2,7 @@
 // Polled by the notification bell (see includes/topnav_user.php) to surface
 // new alerts without a full page reload.
 header('Content-Type: application/json');
-$appBaseUrl = getenv('APP_BASE_URL');
-$isRailway = getenv('RAILWAY_ENVIRONMENT_NAME') !== false || getenv('RAILWAY_PUBLIC_DOMAIN') !== false;
-define('BASE_URL', $isRailway ? '' : rtrim($appBaseUrl !== false ? $appBaseUrl : '/CAPSTONE I', '/'));
+define('BASE_URL', '');
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../config/db.php';
 
