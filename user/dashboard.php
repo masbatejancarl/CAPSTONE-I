@@ -107,7 +107,7 @@ $faqs = [
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link rel="icon" type="image/png" href="/assets/images/favicon.png">
+    <link rel="icon" type="image/png" href="<?= BASE_URL ?>/assets/images/favicon.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Dashboard — SonoBand</title>
