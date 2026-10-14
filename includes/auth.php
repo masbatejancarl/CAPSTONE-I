@@ -1,7 +1,9 @@
 <?php
 require_once __DIR__ . '/config.php';
+// Empty on Railway (site served from the web root). For local XAMPP, set the BASE_URL
+// environment variable (e.g. "/CAPSTONE%20I"). No trailing slash.
 if (!defined('BASE_URL')) {
-    define('BASE_URL', '');
+    define('BASE_URL', rtrim(getenv('BASE_URL') ?: '', '/'));
 }
 
 session_start();
