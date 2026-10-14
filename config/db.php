@@ -8,7 +8,11 @@
 $localConfig = __DIR__ . '/db.local.php';
 $readEnv = static function (string $name): ?string {
     $value = getenv($name);
-    return $value === false ? null : $value;
+    if ($value === false) {
+        // Some SAPIs expose environment variables only through $_SERVER / $_ENV.
+        $value = $_SERVER[$name] ?? $_ENV[$name] ?? false;
+    }
+    return $value === false ? null : (string)$value;
 };
 
 if (file_exists($localConfig)) {
@@ -42,7 +46,8 @@ $missingConstants = array_filter(
 if ($missingConstants) {
     http_response_code(500);
     error_log('Database configuration is missing: ' . implode(', ', $missingConstants));
-    die('Database configuration is missing. Set DB_HOST, DB_PORT, DB_NAME, DB_USER, and DB_PASS in the environment or configure config/db.local.php.');
+    die('Database configuration is missing: ' . implode(', ', $missingConstants)
+        . '. Set DB_HOST, DB_PORT, DB_NAME, DB_USER, and DB_PASS (or DB_PASSWORD) in the environment or configure config/db.local.php.');
 }
 
 foreach (['ESP32_API_KEY', 'SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_AVATAR_BUCKET'] as $name) {
