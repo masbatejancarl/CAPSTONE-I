@@ -6,7 +6,7 @@ requireRole('admin');
 
 if (!hash_equals($_SESSION['csrf_token'] ?? '', $_POST['csrf_token'] ?? '')) {
     $_SESSION['flash_error'] = 'Invalid request. Please try again.';
-    header('Location: users.php');
+    header('Location: ' . BASE_URL . '/admin/users.php');
     exit;
 }
 
@@ -19,7 +19,7 @@ $targetRole = $rstmt->fetchColumn();
 
 if ($targetRole !== 'caregiver') {
     $_SESSION['flash_error'] = 'Invalid caregiver account.';
-    header('Location: users.php');
+    header('Location: ' . BASE_URL . '/admin/users.php');
     exit;
 }
 
@@ -33,7 +33,7 @@ if ($patientIds) {
 
 if ($validPatientCount !== count($patientIds)) {
     $_SESSION['flash_error'] = 'One or more selected patients are invalid.';
-    header('Location: users.php');
+    header('Location: ' . BASE_URL . '/admin/users.php');
     exit;
 }
 
@@ -57,5 +57,5 @@ try {
     $_SESSION['flash_error'] = 'Failed to update linked patients.';
 }
 
-header('Location: users.php');
+header('Location: ' . BASE_URL . '/admin/users.php');
 exit;

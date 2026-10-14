@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 : password_hash($password, PASSWORD_DEFAULT);
             $stmt = db()->prepare("INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)");
             if ($stmt->execute([$name, $email, $hash, $role])) {
-                header('Location: register.php?registered=1');
+                header('Location: ' . BASE_URL . '/auth/register.php?registered=1');
                 exit;
             } else {
                 $error = 'Registration failed. Please try again.';

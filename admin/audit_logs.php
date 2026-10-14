@@ -20,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['clear_all_logs'])) {
         db()->exec('TRUNCATE TABLE audit_logs');
         $_SESSION['flash_success'] = 'All audit logs have been permanently deleted.';
     }
-    header('Location: audit_logs.php');
+    header('Location: ' . BASE_URL . '/admin/audit_logs.php');
     exit;
 }
 

@@ -109,7 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $_SESSION['flash_success'] = $success ?: $avatarSuccess;
     }
-    header('Location: settings.php');
+    header('Location: ' . BASE_URL . '/caregiver/settings.php');
     exit;
 }
 ?>

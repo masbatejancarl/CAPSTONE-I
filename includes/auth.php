@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/config.php';
 if (!defined('BASE_URL')) {
     define('BASE_URL', '');
 }

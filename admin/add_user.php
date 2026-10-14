@@ -66,5 +66,5 @@ if (!$name || !$email || !$password) {
     }
 }
 
-header('Location: users.php');
+header('Location: ' . BASE_URL . '/admin/users.php');
 exit;
