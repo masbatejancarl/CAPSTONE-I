@@ -1,6 +1,17 @@
 <?php
+if (!defined('BASE_URL')) {
+    $appBaseUrl = getenv('APP_BASE_URL');
+    $isRailway = getenv('RAILWAY_ENVIRONMENT_NAME') !== false || getenv('RAILWAY_PUBLIC_DOMAIN') !== false;
+    define('BASE_URL', $isRailway ? '' : rtrim(($appBaseUrl !== false && $appBaseUrl !== '') ? $appBaseUrl : '/CAPSTONE I', '/'));
+}
+
 session_start();
 require_once __DIR__ . '/storage.php';
+
+function assetUrl(string $path): string {
+    $normalizedPath = '/' . ltrim((string)$path, '/');
+    return BASE_URL . $normalizedPath;
+}
 
 // detected_at/created_at are stored in UTC (Postgres NOW()); convert to Philippine Time for display.
 function toManilaTime(string $utcDatetime, string $format): string {
