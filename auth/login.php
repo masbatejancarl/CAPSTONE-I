@@ -51,7 +51,7 @@ $resetSuccess = isset($_GET['reset']);
     <title>Sign In — SonoBand</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="../assets/css/style.css">
+    <link rel="stylesheet" href="/assets/css/style.css">
 </head>
 <body>
 <div class="sb-split">
@@ -61,7 +61,7 @@ $resetSuccess = isset($_GET['reset']);
 
         <!-- Logo -->
         <div class="sb-auth-logo">
-            <img src="<?= assetUrl('assets/images/logo.png') ?>" alt="SonoBand" class="sb-auth-logo-img">
+            <img src="/assets/images/logo.png" alt="SonoBand" class="sb-auth-logo-img">
             <span class="sb-auth-logo-text">SonoBand</span>
         </div>
         <div class="sb-auth-sub">IoT Sound Alert System for the Congenitally Deaf and Non-Speaking Individuals</div>
@@ -134,7 +134,7 @@ $resetSuccess = isset($_GET['reset']);
 
 <!-- Bootstrap JS for modal (used for quick onboarding modal) -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="<?= assetUrl('assets/js/main.js') ?>"></script>
+<script src="/assets/js/main.js"></script>
 
 <!-- standalone onboarding box removed (kept modal and script) -->
 

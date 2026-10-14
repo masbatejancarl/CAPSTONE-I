@@ -31,7 +31,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
         <i class="bi bi-list"></i>
     </button>
     <span class="sb-topbar-brand">
-        <img src="<?= BASE_URL ?>/assets/images/logo.png" alt="SonoBand" class="sb-brand-logo sb-brand-logo-sm">
+        <img src="/assets/images/logo.png" alt="SonoBand" class="sb-brand-logo sb-brand-logo-sm">
         SonoBand
     </span>
     <div class="ms-auto">
@@ -48,7 +48,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
     <!-- Brand -->
     <div class="sb-sidebar-brand">
         <div class="sb-brand-text">
-            <img src="<?= BASE_URL ?>/assets/images/logo.png" alt="SonoBand" class="sb-brand-logo">
+            <img src="/assets/images/logo.png" alt="SonoBand" class="sb-brand-logo">
             SonoBand
         </div>
         <button class="sb-sidebar-close-btn" onclick="sbClose()">

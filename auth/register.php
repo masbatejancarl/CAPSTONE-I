@@ -53,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title>Register — SonoBand</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="../assets/css/style.css">
+    <link rel="stylesheet" href="/assets/css/style.css">
 </head>
 <body>
 <div class="sb-split">
@@ -62,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="sb-auth-card" style="max-width:430px">
 
         <div class="sb-auth-logo">
-            <img src="<?= BASE_URL ?>/assets/images/logo.png" alt="SonoBand" class="sb-auth-logo-img">
+            <img src="/assets/images/logo.png" alt="SonoBand" class="sb-auth-logo-img">
             <span class="sb-auth-logo-text">SonoBand</span>
         </div>
         <div class="sb-auth-sub">Create a new account</div>
@@ -130,6 +130,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
     </div>
 </div>
-<script src="<?= BASE_URL ?>/assets/js/main.js"></script>
+<script src="/assets/js/main.js"></script>
 </body>
 </html>
