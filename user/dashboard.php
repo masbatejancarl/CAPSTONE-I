@@ -11,11 +11,13 @@ $lastAlert = db()->prepare("SELECT * FROM alerts WHERE user_id = ? ORDER BY dete
 $lastAlert->execute([$uid]);
 $lastAlert = $lastAlert->fetch();
 
+$todayRange = manilaTodayUtcRange();
 $utstmt = db()->prepare(
-    "SELECT COUNT(*) FROM alerts WHERE user_id=? AND status='unread'
-     AND (detected_at " . MANILA_SQL . ")::date = (NOW() AT TIME ZONE 'Asia/Manila')::date"
+    "SELECT COUNT(*) FROM alerts
+     WHERE user_id = ? AND status = 'unread'
+       AND detected_at >= ? AND detected_at < ?"
 );
-$utstmt->execute([$uid]);
+$utstmt->execute([$uid, ...$todayRange]);
 $unreadToday = (int)$utstmt->fetchColumn();
 
 $lastAlertDirection = $lastAlert ? alertDirection($lastAlert['metadata'] ?? null) : null;

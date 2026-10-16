@@ -31,6 +31,48 @@ function manilaToday(): string {
     return (new DateTime('now', new DateTimeZone('Asia/Manila')))->format('Y-m-d');
 }
 
+function manilaTodayUtcRange(): array {
+    $manilaToday = new DateTimeImmutable('today', new DateTimeZone('Asia/Manila'));
+    $utc = new DateTimeZone('UTC');
+
+    return [
+        $manilaToday->setTimezone($utc)->format('Y-m-d H:i:s'),
+        $manilaToday->modify('+1 day')->setTimezone($utc)->format('Y-m-d H:i:s'),
+    ];
+}
+
+function fetchTodayUserAlerts(PDO $pdo, int $userId): array {
+    [$startUtc, $endUtc] = manilaTodayUtcRange();
+    $stmt = $pdo->prepare(
+        "SELECT unread.unread_count, recent.id, recent.sound_type, recent.alert_type,
+                recent.status, recent.detected_at, recent.metadata
+         FROM (
+             SELECT COUNT(*) AS unread_count
+             FROM alerts
+             WHERE user_id = ? AND status = 'unread'
+               AND detected_at >= ? AND detected_at < ?
+         ) AS unread
+         LEFT JOIN LATERAL (
+             SELECT id, sound_type, alert_type, status, detected_at, metadata
+             FROM alerts
+             WHERE user_id = ? AND detected_at >= ? AND detected_at < ?
+             ORDER BY detected_at DESC
+             LIMIT 5
+         ) AS recent ON TRUE
+         ORDER BY recent.detected_at DESC"
+    );
+    $stmt->execute([$userId, $startUtc, $endUtc, $userId, $startUtc, $endUtc]);
+    $rows = $stmt->fetchAll();
+
+    return [
+        'unread_count' => (int)$rows[0]['unread_count'],
+        'notifications' => array_values(array_filter(
+            $rows,
+            static fn (array $row): bool => $row['id'] !== null
+        )),
+    ];
+}
+
 // SQL fragment: converts a UTC-naive `timestamp` column to Manila wall-clock time,
 // so date/"today" comparisons match what Philippine users actually see on screen.
 const MANILA_SQL = "AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Manila'";

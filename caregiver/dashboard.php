@@ -28,21 +28,19 @@ $directionCounts = ['left' => 0, 'right' => 0];
 
 if ($patientIds) {
     $placeholders = implode(',', array_fill(0, count($patientIds), '?'));
-
-    $stmt = db()->prepare("SELECT COUNT(*) FROM alerts WHERE user_id IN ($placeholders)");
-    $stmt->execute($patientIds);
-    $totalAlerts = (int)$stmt->fetchColumn();
-
-    $stmt = db()->prepare("SELECT COUNT(*) FROM alerts WHERE user_id IN ($placeholders) AND status='unread'");
-    $stmt->execute($patientIds);
-    $unreadAlerts = (int)$stmt->fetchColumn();
+    $todayRange = manilaTodayUtcRange();
 
     $stmt = db()->prepare(
-        "SELECT COUNT(*) FROM alerts WHERE user_id IN ($placeholders)
-         AND (detected_at " . MANILA_SQL . ")::date = (NOW() AT TIME ZONE 'Asia/Manila')::date"
+        "SELECT COUNT(*) AS total_alerts,
+                COUNT(*) FILTER (WHERE status = 'unread') AS unread_alerts,
+                COUNT(*) FILTER (WHERE detected_at >= ? AND detected_at < ?) AS today_alerts
+         FROM alerts WHERE user_id IN ($placeholders)"
     );
-    $stmt->execute($patientIds);
-    $todayAlerts = (int)$stmt->fetchColumn();
+    $stmt->execute([...$todayRange, ...$patientIds]);
+    $alertSummary = $stmt->fetch();
+    $totalAlerts = (int)$alertSummary['total_alerts'];
+    $unreadAlerts = (int)$alertSummary['unread_alerts'];
+    $todayAlerts = (int)$alertSummary['today_alerts'];
 
     $stmt = db()->prepare("SELECT metadata FROM alerts WHERE user_id IN ($placeholders)");
     $stmt->execute($patientIds);

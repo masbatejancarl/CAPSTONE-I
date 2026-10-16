@@ -6,12 +6,20 @@ requireRole('admin');
 
 $user = currentUser();
 
-$totalUsers   = (int)db()->query("SELECT COUNT(*) FROM users")->fetchColumn();
-$totalAlerts  = (int)db()->query("SELECT COUNT(*) FROM alerts")->fetchColumn();
-$unreadAlerts = (int)db()->query("SELECT COUNT(*) FROM alerts WHERE status='unread'")->fetchColumn();
-$todayAlerts  = (int)db()->query(
-    "SELECT COUNT(*) FROM alerts WHERE (detected_at " . MANILA_SQL . ")::date = (NOW() AT TIME ZONE 'Asia/Manila')::date"
-)->fetchColumn();
+$todayRange = manilaTodayUtcRange();
+$summaryStmt = db()->prepare(
+    "SELECT (SELECT COUNT(*) FROM users) AS total_users,
+            COUNT(*) AS total_alerts,
+            COUNT(*) FILTER (WHERE status = 'unread') AS unread_alerts,
+            COUNT(*) FILTER (WHERE detected_at >= ? AND detected_at < ?) AS today_alerts
+     FROM alerts"
+);
+$summaryStmt->execute($todayRange);
+$summary = $summaryStmt->fetch();
+$totalUsers = (int)$summary['total_users'];
+$totalAlerts = (int)$summary['total_alerts'];
+$unreadAlerts = (int)$summary['unread_alerts'];
+$todayAlerts = (int)$summary['today_alerts'];
 
 $recent = db()->query(
     "SELECT a.*, u.name AS user_name FROM alerts a

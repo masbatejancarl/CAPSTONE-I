@@ -6,20 +6,9 @@ $ustmt = db()->prepare("SELECT email FROM users WHERE id = ?");
 $ustmt->execute([$uid]);
 $user['email'] = $ustmt->fetchColumn() ?: '';
 
-$ucstmt = db()->prepare(
-    "SELECT COUNT(*) FROM alerts WHERE user_id=? AND status='unread'
-     AND (detected_at " . MANILA_SQL . ")::date = (NOW() AT TIME ZONE 'Asia/Manila')::date"
-);
-$ucstmt->execute([$uid]);
-$unread = (int)$ucstmt->fetchColumn();
-
-$nstmt = db()->prepare(
-    "SELECT * FROM alerts WHERE user_id=?
-     AND (detected_at " . MANILA_SQL . ")::date = (NOW() AT TIME ZONE 'Asia/Manila')::date
-     ORDER BY detected_at DESC LIMIT 5"
-);
-$nstmt->execute([$uid]);
-$notifications = $nstmt->fetchAll();
+$todayAlerts = fetchTodayUserAlerts(db(), $uid);
+$unread = $todayAlerts['unread_count'];
+$notifications = $todayAlerts['notifications'];
 
 $currentPage = basename($_SERVER['PHP_SELF']);
 ?>
@@ -127,6 +116,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
     const badge = document.getElementById('fbNotifBadge');
     const list  = document.getElementById('fbNotifList');
     let lastSeenId = null;
+    let pollingNotifications = false;
 
     function renderNotifications(data) {
         if (badge) {
@@ -190,6 +180,9 @@ $currentPage = basename($_SERVER['PHP_SELF']);
     }
 
     function pollNotifications() {
+        if (document.hidden || pollingNotifications) return;
+        pollingNotifications = true;
+
         fetch(`${window.BASE_URL}/api/get_notifications.php`)
             .then(res => res.ok ? res.json() : null)
             .then(data => {
@@ -206,12 +199,13 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                 lastSeenId = newestId;
                 renderNotifications(data);
             })
-            .catch(() => {});
+            .catch(() => {})
+            .finally(() => { pollingNotifications = false; });
     }
 
     if (badge || list) {
         pollNotifications();
-        setInterval(pollNotifications, 5000);
+        setInterval(pollNotifications, 15000);
     }
 })();
 </script>

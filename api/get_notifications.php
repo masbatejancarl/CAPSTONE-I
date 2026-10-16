@@ -10,22 +10,9 @@ if (!isLoggedIn()) { http_response_code(401); echo json_encode(['error' => 'Unau
 
 $uid = (int)currentUser()['id'];
 
-$cstmt = db()->prepare(
-    "SELECT COUNT(*) FROM alerts WHERE user_id=? AND status='unread'
-     AND (detected_at " . MANILA_SQL . ")::date = (NOW() AT TIME ZONE 'Asia/Manila')::date"
-);
-$cstmt->execute([$uid]);
-$unread = (int)$cstmt->fetchColumn();
+$todayAlerts = fetchTodayUserAlerts(db(), $uid);
 
-$nstmt = db()->prepare(
-    "SELECT * FROM alerts WHERE user_id=?
-     AND (detected_at " . MANILA_SQL . ")::date = (NOW() AT TIME ZONE 'Asia/Manila')::date
-     ORDER BY detected_at DESC LIMIT 5"
-);
-$nstmt->execute([$uid]);
-$rows = $nstmt->fetchAll();
-
-$notifications = array_map(function ($n) {
+$notifications = array_map(static function ($n) {
     return [
         'id'          => (int)$n['id'],
         'direction'   => alertDirection($n['metadata'] ?? null),
@@ -34,9 +21,9 @@ $notifications = array_map(function ($n) {
         'status'      => $n['status'],
         'detected_at' => toManilaTime($n['detected_at'], 'M d, Y H:i'),
     ];
-}, $rows);
+}, $todayAlerts['notifications']);
 
 echo json_encode([
-    'unread_count'  => $unread,
+    'unread_count'  => $todayAlerts['unread_count'],
     'notifications' => $notifications,
 ]);

@@ -23,6 +23,14 @@ CREATE TABLE IF NOT EXISTS alerts (
     metadata       TEXT
 );
 
+CREATE INDEX IF NOT EXISTS idx_alerts_user_detected_at
+    ON alerts (user_id, detected_at DESC);
+CREATE INDEX IF NOT EXISTS idx_alerts_user_unread_detected_at
+    ON alerts (user_id, detected_at DESC)
+    WHERE status = 'unread';
+CREATE INDEX IF NOT EXISTS idx_alerts_detected_at
+    ON alerts (detected_at DESC);
+
 -- Keep an existing alerts table compatible with the current alert payload.
 ALTER TABLE alerts ALTER COLUMN sound_type DROP NOT NULL;
 ALTER TABLE alerts ADD COLUMN IF NOT EXISTS alert_type VARCHAR(10);
