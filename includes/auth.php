@@ -15,7 +15,9 @@ function assetUrl(string $path): string {
 }
 
 function renderFavicon(): void {
+    $pngUrl = htmlspecialchars(BASE_URL . '/assets/images/logo.png?v=1', ENT_QUOTES);
     $faviconUrl = htmlspecialchars(BASE_URL . '/favicon.ico', ENT_QUOTES);
+    echo '<link rel="icon" type="image/png" href="' . $pngUrl . '">' . PHP_EOL;
     echo '<link rel="icon" type="image/x-icon" href="' . $faviconUrl . '">' . PHP_EOL;
     echo '<link rel="shortcut icon" type="image/x-icon" href="' . $faviconUrl . '">' . PHP_EOL;
 }
