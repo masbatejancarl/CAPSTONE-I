@@ -25,7 +25,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
 ?>
 <header class="fb-nav role-user">
     <a href="<?= BASE_URL ?>/user/dashboard.php" class="fb-nav-brand">
-        <img src="/assets/images/logo.png" alt="SonoBand" class="fb-nav-brand-logo">
+        <img src="/assets/images/logo-optimized.png" alt="SonoBand" class="fb-nav-brand-logo">
         <span>SonoBand</span>
     </a>
 

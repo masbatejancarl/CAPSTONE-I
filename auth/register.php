@@ -63,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="sb-auth-card" style="max-width:430px">
 
         <div class="sb-auth-logo">
-            <img src="/assets/images/logo.png" alt="SonoBand" class="sb-auth-logo-img">
+            <img src="/assets/images/logo-optimized.png" alt="SonoBand" class="sb-auth-logo-img">
             <span class="sb-auth-logo-text">SonoBand</span>
         </div>
         <div class="sb-auth-sub">Create a new account</div>

@@ -61,7 +61,7 @@ $resetSuccess = isset($_GET['reset']);
 
         <!-- Logo -->
         <div class="sb-auth-logo">
-            <img src="<?= BASE_URL ?>/assets/images/logo.png" alt="SonoBand" class="sb-auth-logo-img">
+            <img src="<?= BASE_URL ?>/assets/images/logo-optimized.png" alt="SonoBand" class="sb-auth-logo-img">
             <span class="sb-auth-logo-text">SonoBand</span>
         </div>
         <div class="sb-auth-sub">IoT Sound Alert System for the Congenitally Deaf and Non-Speaking Individuals</div>

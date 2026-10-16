@@ -94,7 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === 'find_em
     <div class="sb-auth-card">
 
         <div class="sb-auth-logo">
-            <img src="/assets/images/logo.png" alt="SonoBand" class="sb-auth-logo-img">
+            <img src="/assets/images/logo-optimized.png" alt="SonoBand" class="sb-auth-logo-img">
             <span class="sb-auth-logo-text">SonoBand</span>
         </div>
         <div class="sb-auth-sub">

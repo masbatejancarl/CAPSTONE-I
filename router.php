@@ -6,6 +6,8 @@ if ($path === '/favicon.ico') {
     $faviconFile = __DIR__ . '/assets/images/favicon.ico';
     if (is_file($faviconFile)) {
         header('Content-Type: image/x-icon');
+        header('Cache-Control: public, max-age=3600');
+        header('ETag: "' . dechex(filemtime($faviconFile)) . '-' . dechex(filesize($faviconFile)) . '"');
         readfile($faviconFile);
         return true;
     }
@@ -20,9 +22,31 @@ if ($path === '/') {
 
 if ($file !== false && strpos($file, __DIR__) === 0) {
     if (is_file($file)) {
-        // php -S does not read .htaccess, so serve .jfif as JPEG here.
-        if (strtolower(pathinfo($file, PATHINFO_EXTENSION)) === 'jfif') {
-            header('Content-Type: image/jpeg');
+        $staticMimeTypes = [
+            'css'   => 'text/css; charset=utf-8',
+            'js'    => 'application/javascript; charset=utf-8',
+            'ico'   => 'image/x-icon',
+            'png'   => 'image/png',
+            'jpg'   => 'image/jpeg',
+            'jpeg'  => 'image/jpeg',
+            'jfif'  => 'image/jpeg',
+            'svg'   => 'image/svg+xml',
+            'webp'  => 'image/webp',
+            'woff'  => 'font/woff',
+            'woff2' => 'font/woff2',
+        ];
+        $extension = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+        if (isset($staticMimeTypes[$extension])) {
+            $etag = '"' . dechex(filemtime($file)) . '-' . dechex(filesize($file)) . '"';
+            header('Cache-Control: public, max-age=3600');
+            header('ETag: ' . $etag);
+
+            if (trim($_SERVER['HTTP_IF_NONE_MATCH'] ?? '') === $etag) {
+                http_response_code(304);
+                return true;
+            }
+
+            header('Content-Type: ' . $staticMimeTypes[$extension]);
             readfile($file);
             return true;
         }
