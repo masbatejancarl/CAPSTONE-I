@@ -32,7 +32,10 @@ $months = [
 ];
 $availableYears = range(2024, (int)date('Y'));
 
-$filterAction = $_GET['action']     ?? '';
+$filterAction = $_GET['action'] ?? '';
+if (!in_array($filterAction, AUDIT_LOG_ACTIONS, true)) {
+    $filterAction = '';
+}
 $filterRole   = $_GET['role']       ?? '';
 $search       = trim($_GET['search'] ?? '');
 $fromMonth    = $_GET['from_month'] ?? '';
@@ -56,8 +59,10 @@ $page   = max(1, (int)($_GET['page'] ?? 1));
 $limit  = 15;
 $offset = ($page - 1) * $limit;
 
-$where  = ['1=1'];
-$params = [];
+$where = [
+    'al.action IN (' . implode(',', array_fill(0, count(AUDIT_LOG_ACTIONS), '?')) . ')',
+];
+$params = AUDIT_LOG_ACTIONS;
 if ($filterAction) { $where[] = 'al.action = ?'; $params[] = $filterAction; }
 if ($filterRole)   { $where[] = 'al.role = ?';   $params[] = $filterRole; }
 
