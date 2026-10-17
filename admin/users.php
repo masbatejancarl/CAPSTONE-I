@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete'])) {
 $search     = trim($_GET['search'] ?? '');
 $roleFilter = $_GET['role'] ?? '';
 $page   = max(1, (int)($_GET['page'] ?? 1));
-$limit  = 10;
+$limit  = 12;
 $offset = ($page - 1) * $limit;
 
 $where  = ['1=1'];
