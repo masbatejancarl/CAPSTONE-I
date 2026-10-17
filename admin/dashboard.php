@@ -187,6 +187,7 @@ $directionCounts = array_filter($directionCounts);
                 <div class="sb-timeline-content">
                     <div class="sb-timeline-row1">
                         <span class="sb-timeline-title"><?= htmlspecialchars(directionLabel($direction)) ?></span>
+                        <span class="sb-sound-type"><?= htmlspecialchars(soundTypeLabel($row['sound_type'] ?? null)) ?></span>
                         <?php $severity = alertSeverity($row['alert_type'] ?? null); ?>
                         <span class="sb-alert-type <?= $severity ?>"><?= alertTypeLabel($severity) ?></span>
                         <span class="sb-status <?= $row['status'] ?>"><?= ucfirst($row['status']) ?></span>
