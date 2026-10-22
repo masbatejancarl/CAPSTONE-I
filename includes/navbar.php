@@ -11,6 +11,7 @@ $navLinks = [
         ['href' => BASE_URL . '/admin/dashboard.php', 'icon' => 'bi-speedometer2', 'label' => 'Control Room'],
         ['href' => BASE_URL . '/admin/users.php',     'icon' => 'bi-people',         'label' => 'Users'],
         ['href' => BASE_URL . '/admin/alerts.php',     'icon' => 'bi-bell',           'label' => 'Alerts'],
+        ['href' => BASE_URL . '/admin/device_monitoring.php', 'icon' => 'bi-geo-alt', 'label' => 'Live Device Monitoring'],
         ['href' => BASE_URL . '/admin/audit_logs.php', 'icon' => 'bi-clock-history',  'label' => 'Audit Logs'],
         ['href' => BASE_URL . '/admin/settings.php',   'icon' => 'bi-gear-fill',      'label' => 'Account Settings'],
     ],

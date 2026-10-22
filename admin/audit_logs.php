@@ -106,6 +106,8 @@ $actionMeta = [
     'logout'         => ['bi-box-arrow-right',     'sound-default',  'Logout'],
     'login_failed'   => ['bi-shield-x',            'sound-alarm',    'Failed Login'],
     'password_reset' => ['bi-key-fill',            'sound-vehicle',  'Password Reset'],
+    'DEVICE_CONNECTED'    => ['bi-broadcast-pin', 'sound-doorbell', 'Device Connected'],
+    'DEVICE_DISCONNECTED' => ['bi-broadcast',     'sound-alarm',    'Device Disconnected'],
 ];
 ?>
 <!DOCTYPE html>
@@ -167,6 +169,8 @@ $actionMeta = [
                     <option value="logout"       <?= $filterAction === 'logout'       ? 'selected' : '' ?>>Logout</option>
                     <option value="login_failed" <?= $filterAction === 'login_failed' ? 'selected' : '' ?>>Failed Login</option>
                     <option value="password_reset" <?= $filterAction === 'password_reset' ? 'selected' : '' ?>>Password Reset</option>
+                    <option value="DEVICE_CONNECTED" <?= $filterAction === 'DEVICE_CONNECTED' ? 'selected' : '' ?>>Device Connected</option>
+                    <option value="DEVICE_DISCONNECTED" <?= $filterAction === 'DEVICE_DISCONNECTED' ? 'selected' : '' ?>>Device Disconnected</option>
                 </select>
             </div>
             <div class="col-6 col-md-1">
@@ -255,7 +259,15 @@ $actionMeta = [
                     <div class="sb-timeline-meta">
                         <span><i class="bi bi-person"></i> <?= htmlspecialchars($row['user_name'] ?: 'Unknown') ?></span>
                         <span><i class="bi bi-clock"></i> <?= toManilaTime($row['created_at'], 'h:i A') ?></span>
+                        <?php if (!empty($row['ip_address'])): ?>
+                        <span><i class="bi bi-globe"></i> <?= htmlspecialchars($row['ip_address']) ?></span>
+                        <?php endif; ?>
                     </div>
+                    <?php if (!empty($row['details'])): ?>
+                    <div class="sb-timeline-meta">
+                        <span><i class="bi bi-info-circle"></i> <?= htmlspecialchars($row['details']) ?></span>
+                    </div>
+                    <?php endif; ?>
                 </div>
             </div>
 

@@ -187,7 +187,14 @@ function emailPolicyMessage(): string {
     return 'Email must be a Gmail address, e.g. juan.delacruz@gmail.com.';
 }
 
-const AUDIT_LOG_ACTIONS = ['login', 'logout', 'login_failed', 'password_reset'];
+const AUDIT_LOG_ACTIONS = [
+    'login',
+    'logout',
+    'login_failed',
+    'password_reset',
+    'DEVICE_CONNECTED',
+    'DEVICE_DISCONNECTED',
+];
 
 // Records supported authentication events in the audit_logs table.
 function logAuditEvent(?int $userId, string $name, string $email, string $role, string $action): void {
