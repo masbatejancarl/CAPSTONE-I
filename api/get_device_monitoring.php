@@ -7,9 +7,9 @@ require_once __DIR__ . '/../config/db.php';
 requireRole('admin');
 
 $pdo = db();
-$pdo->beginTransaction();
 
 try {
+    $pdo->beginTransaction();
     $stmt = $pdo->query(
         "SELECT d.id, d.user_id, d.device_name, d.mac_address, d.ip_address,
                 d.is_on, d.last_seen, d.sensitivity, d.vibration_intensity,
@@ -17,7 +17,7 @@ try {
                 location.details AS location_details,
                 location.created_at AS location_updated_at
          FROM user_devices d
-         JOIN users u ON u.id = d.user_id
+         JOIN users u ON u.id::text = d.user_id
          LEFT JOIN LATERAL (
              SELECT al.details, al.created_at
              FROM audit_logs al

@@ -18,7 +18,6 @@ requireRole('admin');
     <script>window.BASE_URL = '<?= BASE_URL ?>';</script>
     <style>
         #device-map { min-height: 390px; border-radius: 12px; z-index: 1; }
-        .device-monitor-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(280px, .8fr); gap: 18px; }
         .device-status-pill { display: inline-flex; align-items: center; gap: 7px; border-radius: 30px; padding: 5px 11px; font-size: 12px; font-weight: 700; }
         .device-status-pill::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
         .device-status-online { background: rgba(61,172,116,.12); color: #3dac74; }
@@ -29,7 +28,21 @@ requireRole('admin');
         .device-detail-label { color: var(--muted); font-size: 11px; margin-bottom: 4px; }
         .device-detail-value { color: var(--text); font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
         .device-monitor-error { color: var(--danger); }
-        @media (max-width: 800px) { .device-monitor-grid { grid-template-columns: 1fr; } }
+        .device-notification-list { display: grid; gap: 10px; }
+        .device-notification { width: 100%; display: flex; align-items: flex-start; gap: 12px; padding: 14px; text-align: left; color: var(--text); background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; transition: border-color .18s, background .18s; }
+        .device-notification:hover, .device-notification[aria-expanded="true"] { border-color: var(--accent); background: var(--surface); }
+        .device-notification-icon { width: 38px; height: 38px; flex: 0 0 38px; display: grid; place-items: center; border-radius: 10px; background: var(--accent-dim); color: var(--accent); font-size: 17px; }
+        .device-notification-content { min-width: 0; flex: 1; }
+        .device-notification-title { font-size: 13px; font-weight: 700; }
+        .device-notification-meta { margin-top: 4px; color: var(--text-2); font-size: 12px; overflow-wrap: anywhere; }
+        .device-notification-address { margin-top: 5px; color: var(--muted); font-size: 11.5px; overflow-wrap: anywhere; }
+        .device-notification-chevron { margin: 4px 0 0 4px; color: var(--muted); transition: transform .18s; }
+        .device-notification[aria-expanded="true"] .device-notification-chevron { transform: rotate(180deg); }
+        .device-selected-panel[hidden] { display: none !important; }
+        @media (max-width: 600px) {
+            .device-detail-grid { grid-template-columns: 1fr; }
+            #device-map { min-height: 300px; }
+        }
     </style>
 </head>
 <body>
@@ -46,56 +59,48 @@ requireRole('admin');
             </div>
             <p class="sb-page-sub mb-3">Connection-state audit events are detected while this page is open; brief changes between refreshes may not be recorded.</p>
 
-            <div class="sb-card mb-4">
-                <div class="row g-3 align-items-end">
-                    <div class="col-md-8">
-                        <label class="sb-label" for="device-selector">Select device or user</label>
-                        <select class="form-select sb-input" id="device-selector" disabled>
-                            <option value="">Loading devices…</option>
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="sb-page-sub" id="device-count">Waiting for device data</div>
-                    </div>
+            <section class="sb-card" aria-live="polite">
+                <div class="sb-section-header">
+                    <div class="sb-section-title"><i class="bi bi-broadcast-pin"></i> Device Notifications</div>
+                    <div class="sb-page-sub" id="device-count">Waiting for device data</div>
                 </div>
-                <div id="device-error" class="device-monitor-error mt-3" role="alert" hidden></div>
-            </div>
+                <div id="device-error" class="device-monitor-error mb-3" role="alert" hidden></div>
+                <div id="device-list" class="device-notification-list">
+                    <div class="sb-empty"><i class="bi bi-broadcast"></i><p>Loading device notifications…</p></div>
+                </div>
+            </section>
 
-            <div class="device-monitor-grid">
-                <section class="sb-card" aria-live="polite">
+            <section id="device-selected-panel" class="sb-card mt-4 device-selected-panel" hidden aria-live="polite">
+                <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+                    <div>
+                        <h2 id="selected-device-heading" class="mb-1" style="font-size:16px;color:var(--text)">Selected Device</h2>
+                        <div class="sb-page-sub">Device and configuration details</div>
+                    </div>
+                    <span id="device-status" class="device-status-pill device-status-unknown">Waiting</span>
+                </div>
+                <div id="device-details" class="device-detail-grid">
+                    <div class="device-detail"><div class="device-detail-label">Device Name</div><div class="device-detail-value" data-field="device_name"></div></div>
+                    <div class="device-detail"><div class="device-detail-label">MAC Address</div><div class="device-detail-value" data-field="mac_address"></div></div>
+                    <div class="device-detail"><div class="device-detail-label">Connected User</div><div class="device-detail-value" data-field="user_name"></div></div>
+                    <div class="device-detail"><div class="device-detail-label">User Email</div><div class="device-detail-value" data-field="email"></div></div>
+                    <div class="device-detail"><div class="device-detail-label">Role</div><div class="device-detail-value" data-field="role"></div></div>
+                    <div class="device-detail"><div class="device-detail-label">Connection IP</div><div class="device-detail-value" data-field="ip_address"></div></div>
+                    <div class="device-detail"><div class="device-detail-label">Last Seen</div><div class="device-detail-value" data-field="last_seen"></div></div>
+                    <div class="device-detail"><div class="device-detail-label">Latest Location</div><div class="device-detail-value" data-field="location_address"></div></div>
+                    <div class="device-detail"><div class="device-detail-label">Location Updated</div><div class="device-detail-value" data-field="location_updated_at"></div></div>
+                    <div class="device-detail"><div class="device-detail-label">Vibration Intensity</div><div class="device-detail-value" data-field="vibration_intensity"></div></div>
+                    <div class="device-detail"><div class="device-detail-label">Sensitivity</div><div class="device-detail-value" data-field="sensitivity"></div></div>
+                    <div class="device-detail"><div class="device-detail-label">Sound Threshold</div><div class="device-detail-value" data-field="sound_threshold"></div></div>
+                </div>
+                <div class="mt-4">
                     <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
-                        <h2 class="mb-0" style="font-size:16px;color:var(--text)">Device Status</h2>
-                        <span id="device-status" class="device-status-pill device-status-unknown">Waiting</span>
-                    </div>
-                    <div id="device-empty" class="sb-empty">
-                        <i class="bi bi-broadcast"></i>
-                        <p id="device-empty-text">Loading connected devices…</p>
-                    </div>
-                    <div id="device-details" class="device-detail-grid" hidden>
-                        <div class="device-detail"><div class="device-detail-label">Device Name</div><div class="device-detail-value" data-field="device_name"></div></div>
-                        <div class="device-detail"><div class="device-detail-label">MAC Address</div><div class="device-detail-value" data-field="mac_address"></div></div>
-                        <div class="device-detail"><div class="device-detail-label">Connected User</div><div class="device-detail-value" data-field="user_name"></div></div>
-                        <div class="device-detail"><div class="device-detail-label">User Email</div><div class="device-detail-value" data-field="email"></div></div>
-                        <div class="device-detail"><div class="device-detail-label">Role</div><div class="device-detail-value" data-field="role"></div></div>
-                        <div class="device-detail"><div class="device-detail-label">Connection IP</div><div class="device-detail-value" data-field="ip_address"></div></div>
-                        <div class="device-detail"><div class="device-detail-label">Last Seen</div><div class="device-detail-value" data-field="last_seen"></div></div>
-                        <div class="device-detail"><div class="device-detail-label">Latest Location</div><div class="device-detail-value" data-field="location_address"></div></div>
-                        <div class="device-detail"><div class="device-detail-label">Location Updated</div><div class="device-detail-value" data-field="location_updated_at"></div></div>
-                        <div class="device-detail"><div class="device-detail-label">Vibration Intensity</div><div class="device-detail-value" data-field="vibration_intensity"></div></div>
-                        <div class="device-detail"><div class="device-detail-label">Sensitivity</div><div class="device-detail-value" data-field="sensitivity"></div></div>
-                        <div class="device-detail"><div class="device-detail-label">Sound Threshold</div><div class="device-detail-value" data-field="sound_threshold"></div></div>
-                    </div>
-                </section>
-
-                <section class="sb-card">
-                    <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
-                        <h2 class="mb-0" style="font-size:16px;color:var(--text)">Device Location</h2>
-                        <small class="sb-page-sub">Address is geocoded by OpenStreetMap Nominatim</small>
+                        <h3 class="mb-0" style="font-size:15px;color:var(--text)">Device Location</h3>
+                        <small class="sb-page-sub">Address geocoded by OpenStreetMap Nominatim</small>
                     </div>
                     <div id="device-map" role="application" aria-label="Map showing selected device location"></div>
-                    <div id="map-message" class="sb-page-sub mt-2" aria-live="polite">Waiting for location data…</div>
-                </section>
-            </div>
+                    <div id="map-message" class="sb-page-sub mt-2" aria-live="polite">Select a device notification to view its location.</div>
+                </div>
+            </section>
         </div>
     </main>
 </div>
@@ -103,10 +108,10 @@ requireRole('admin');
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 (() => {
-    const selector = document.getElementById('device-selector');
+    const deviceList = document.getElementById('device-list');
     const errorBox = document.getElementById('device-error');
+    const selectedPanel = document.getElementById('device-selected-panel');
     const detailsBox = document.getElementById('device-details');
-    const emptyBox = document.getElementById('device-empty');
     const statusBadge = document.getElementById('device-status');
     const mapMessage = document.getElementById('map-message');
     const refreshLabel = document.getElementById('device-last-refresh');
@@ -128,6 +133,7 @@ requireRole('admin');
     let selectedId = '';
     let refreshInProgress = false;
     let currentLocationKey = '';
+    let mapInitialized = false;
 
     function setText(field, value) {
         const target = detailsBox.querySelector(`[data-field="${field}"]`);
@@ -137,20 +143,15 @@ requireRole('admin');
     function renderSelectedDevice() {
         const device = devices.find(item => String(item.id) === String(selectedId));
         if (!device) {
-            detailsBox.hidden = true;
-            emptyBox.hidden = false;
-            document.getElementById('device-empty-text').textContent =
-                devices.length ? 'Select a device to view its status.' : 'No devices are registered yet.';
-            statusBadge.className = 'device-status-pill device-status-unknown';
-            statusBadge.textContent = 'No device selected';
+            selectedPanel.hidden = true;
             currentLocationKey = '';
             markerLayer?.clearLayers();
-            mapMessage.textContent = map ? 'No device selected.' : 'Map library did not load.';
             return;
         }
 
-        emptyBox.hidden = true;
-        detailsBox.hidden = false;
+        selectedPanel.hidden = false;
+        document.getElementById('selected-device-heading').textContent =
+            `${device.device_name || 'Unnamed device'} — ${device.user_name || 'Unknown user'}`;
         setText('device_name', device.device_name);
         setText('mac_address', device.mac_address);
         setText('user_name', device.user_name);
@@ -172,6 +173,10 @@ requireRole('admin');
             statusBadge.textContent = 'Offline';
         }
 
+        if (map && !mapInitialized) {
+            map.invalidateSize();
+            mapInitialized = true;
+        }
         showLocation(device);
     }
 
@@ -230,25 +235,55 @@ requireRole('admin');
         })[character]);
     }
 
-    function renderSelector() {
-        const previousId = selectedId;
-        selector.replaceChildren();
+    function renderDeviceNotifications() {
+        deviceList.replaceChildren();
         if (!devices.length) {
-            selector.add(new Option('No devices registered', ''));
-            selector.disabled = true;
             selectedId = '';
+            selectedPanel.hidden = true;
+            const empty = document.createElement('div');
+            empty.className = 'sb-empty';
+            empty.innerHTML = '<i class="bi bi-broadcast"></i><p>No registered devices found.</p>';
+            deviceList.append(empty);
             return;
         }
+
         devices.forEach(device => {
-            const status = device.online ? 'Online' : 'Offline';
-            const label = `${device.device_name || 'Unnamed device'} — ${device.user_name || 'Unknown user'} (${status})`;
-            selector.add(new Option(label, device.id));
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'device-notification';
+            button.dataset.deviceId = device.id;
+            button.setAttribute('aria-expanded', String(String(device.id) === String(selectedId)));
+
+            const icon = document.createElement('span');
+            icon.className = 'device-notification-icon';
+            icon.innerHTML = '<i class="bi bi-broadcast-pin"></i>';
+
+            const content = document.createElement('span');
+            content.className = 'device-notification-content';
+            const title = document.createElement('span');
+            title.className = 'device-notification-title d-block';
+            title.textContent = device.user_name || 'Unknown user';
+            const info = document.createElement('span');
+            info.className = 'device-notification-meta d-block';
+            info.textContent = `${device.device_name || 'Unnamed device'} · ${device.mac_address || 'No MAC address'}`;
+            const address = document.createElement('span');
+            address.className = 'device-notification-address d-block';
+            address.textContent = device.location_address || 'No location address reported';
+            content.append(title, info, address);
+
+            const status = document.createElement('span');
+            status.className = `device-status-pill ${device.online ? 'device-status-online' : 'device-status-offline'}`;
+            status.textContent = device.online ? 'Online' : 'Offline';
+            const chevron = document.createElement('i');
+            chevron.className = 'bi bi-chevron-down device-notification-chevron';
+            button.append(icon, content, status, chevron);
+            button.addEventListener('click', () => {
+                selectedId = String(device.id) === String(selectedId) ? '' : String(device.id);
+                renderDeviceNotifications();
+                renderSelectedDevice();
+            });
+            deviceList.append(button);
         });
-        selector.disabled = false;
-        selectedId = devices.some(device => String(device.id) === String(previousId))
-            ? previousId
-            : String(devices[0].id);
-        selector.value = selectedId;
     }
 
     async function refreshDevices() {
@@ -262,7 +297,9 @@ requireRole('admin');
             const payload = await response.json();
             if (!response.ok) throw new Error(payload.error || `Request failed (${response.status}).`);
             devices = payload.devices;
-            renderSelector();
+            devices.sort((left, right) => Number(right.online) - Number(left.online));
+            if (!devices.some(device => String(device.id) === String(selectedId))) selectedId = '';
+            renderDeviceNotifications();
             renderSelectedDevice();
             document.getElementById('device-count').textContent =
                 `${payload.online_count} online · ${devices.length} registered device(s)`;
@@ -277,10 +314,6 @@ requireRole('admin');
         }
     }
 
-    selector.addEventListener('change', () => {
-        selectedId = selector.value;
-        renderSelectedDevice();
-    });
     refreshDevices();
     window.setInterval(refreshDevices, 15000);
     window.addEventListener('resize', () => map?.invalidateSize());
