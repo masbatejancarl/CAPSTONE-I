@@ -21,11 +21,12 @@ try {
          LEFT JOIN LATERAL (
              SELECT al.details, al.created_at
              FROM audit_logs al
-             WHERE al.user_id = d.user_id
+             WHERE al.user_id::text = d.user_id
                AND al.action = 'location_update'
              ORDER BY al.created_at DESC
              LIMIT 1
          ) location ON TRUE
+         WHERE LEFT(UPPER(COALESCE(d.mac_address, '')), 7) <> 'MANUAL_'
          ORDER BY u.name, d.device_name"
     );
     $devices = $stmt->fetchAll();
