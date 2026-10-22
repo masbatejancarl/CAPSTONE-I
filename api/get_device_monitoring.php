@@ -26,7 +26,6 @@ try {
              ORDER BY al.created_at DESC
              LIMIT 1
          ) location ON TRUE
-         WHERE LEFT(UPPER(COALESCE(d.mac_address, '')), 7) <> 'MANUAL_'
          ORDER BY u.name, d.device_name"
     );
     $devices = $stmt->fetchAll();

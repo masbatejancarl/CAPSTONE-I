@@ -80,7 +80,6 @@ requireRole('admin');
                 </div>
                 <div id="device-details" class="device-detail-grid">
                     <div class="device-detail"><div class="device-detail-label">Device Name</div><div class="device-detail-value" data-field="device_name"></div></div>
-                    <div class="device-detail"><div class="device-detail-label">MAC Address</div><div class="device-detail-value" data-field="mac_address"></div></div>
                     <div class="device-detail"><div class="device-detail-label">Connected User</div><div class="device-detail-value" data-field="user_name"></div></div>
                     <div class="device-detail"><div class="device-detail-label">User Email</div><div class="device-detail-value" data-field="email"></div></div>
                     <div class="device-detail"><div class="device-detail-label">Role</div><div class="device-detail-value" data-field="role"></div></div>
@@ -153,7 +152,6 @@ requireRole('admin');
         document.getElementById('selected-device-heading').textContent =
             `${device.device_name || 'Unnamed device'} — ${device.user_name || 'Unknown user'}`;
         setText('device_name', device.device_name);
-        setText('mac_address', device.mac_address);
         setText('user_name', device.user_name);
         setText('email', device.email);
         setText('role', device.role);
@@ -265,7 +263,7 @@ requireRole('admin');
             title.textContent = device.user_name || 'Unknown user';
             const info = document.createElement('span');
             info.className = 'device-notification-meta d-block';
-            info.textContent = `${device.device_name || 'Unnamed device'} · ${device.mac_address || 'No MAC address'}`;
+            info.textContent = device.device_name || 'Unnamed device';
             const address = document.createElement('span');
             address.className = 'device-notification-address d-block';
             address.textContent = device.location_address || 'No location address reported';
