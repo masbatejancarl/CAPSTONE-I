@@ -30,7 +30,6 @@ try {
     );
     $devices = $stmt->fetchAll();
 
-    $lockStmt = $pdo->prepare('SELECT pg_advisory_xact_lock(hashtext(?))');
     $stateStmt = $pdo->prepare(
         "SELECT CASE
                     WHEN is_on IS TRUE AND last_seen >= NOW() - INTERVAL '1 minute' THEN 1
@@ -38,57 +37,10 @@ try {
                 END AS online
          FROM user_devices WHERE id = ?"
     );
-    $previousEventStmt = $pdo->prepare(
-        "SELECT action
-         FROM audit_logs
-         WHERE user_id = ?
-           AND action IN ('DEVICE_CONNECTED', 'DEVICE_DISCONNECTED')
-           AND position(? in details) > 0
-         ORDER BY created_at DESC
-         LIMIT 1"
-    );
-    $insertEventStmt = $pdo->prepare(
-        "INSERT INTO audit_logs
-            (user_id, user_name, user_email, role, action, ip_address, details)
-         VALUES (?, ?, ?, ?, ?, ?, ?)"
-    );
 
     foreach ($devices as &$device) {
-        $macAddress = (string)($device['mac_address'] ?? '');
-        $lockStmt->execute([$macAddress !== '' ? $macAddress : 'device-' . $device['id']]);
-
         $stateStmt->execute([$device['id']]);
         $device['online'] = (int)$stateStmt->fetchColumn() === 1;
-
-        if ($macAddress !== '') {
-            $previousEventStmt->execute([
-                $device['user_id'],
-                '[MAC: ' . $macAddress . ']',
-            ]);
-            $previousAction = $previousEventStmt->fetchColumn();
-            $nextAction = $device['online'] ? 'DEVICE_CONNECTED' : 'DEVICE_DISCONNECTED';
-            $isInitialObservation = $previousAction === false && $device['last_seen'] !== null;
-
-            if ($isInitialObservation || ($previousAction !== false && $previousAction !== $nextAction)) {
-                $details = sprintf(
-                    '%s device %s [MAC: %s]',
-                    $isInitialObservation
-                        ? 'Initial status observed as ' . ($device['online'] ? 'online' : 'offline') . ' for'
-                        : ($device['online'] ? 'Connected to' : 'Disconnected from'),
-                    $device['device_name'] ?: 'SonoBand',
-                    $macAddress
-                );
-                $insertEventStmt->execute([
-                    $device['user_id'],
-                    $device['user_name'],
-                    $device['email'],
-                    $device['role'],
-                    $nextAction,
-                    $device['ip_address'],
-                    $details,
-                ]);
-            }
-        }
 
         $device['location_address'] = '';
         if (preg_match('/Updated location:\s*(.+)$/i', (string)($device['location_details'] ?? ''), $matches)) {

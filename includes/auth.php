@@ -192,8 +192,6 @@ const AUDIT_LOG_ACTIONS = [
     'logout',
     'login_failed',
     'password_reset',
-    'DEVICE_CONNECTED',
-    'DEVICE_DISCONNECTED',
 ];
 
 // Records supported authentication events in the audit_logs table.

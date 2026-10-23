@@ -106,8 +106,6 @@ $actionMeta = [
     'logout'         => ['bi-box-arrow-right',     'sound-default',  'Logout'],
     'login_failed'   => ['bi-shield-x',            'sound-alarm',    'Failed Login'],
     'password_reset' => ['bi-key-fill',            'sound-vehicle',  'Password Reset'],
-    'DEVICE_CONNECTED'    => ['bi-broadcast-pin', 'sound-doorbell', 'Device Connected'],
-    'DEVICE_DISCONNECTED' => ['bi-broadcast',     'sound-alarm',    'Device Disconnected'],
 ];
 ?>
 <!DOCTYPE html>
