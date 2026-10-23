@@ -95,7 +95,8 @@ $totalRows  = (int)$cstmt->fetchColumn();
 $totalPages = (int)ceil($totalRows / $limit);
 
 $dstmt = db()->prepare(
-    "SELECT al.* FROM audit_logs al
+    "SELECT al.action, al.role, al.user_name, al.created_at, al.ip_address
+     FROM audit_logs al
      $whereSQL ORDER BY al.created_at DESC LIMIT $limit OFFSET $offset"
 );
 $dstmt->execute($params);
@@ -259,11 +260,6 @@ $actionMeta = [
                         <span><i class="bi bi-globe"></i> <?= htmlspecialchars($row['ip_address']) ?></span>
                         <?php endif; ?>
                     </div>
-                    <?php if (!empty($row['details'])): ?>
-                    <div class="sb-timeline-meta">
-                        <span><i class="bi bi-info-circle"></i> <?= htmlspecialchars($row['details']) ?></span>
-                    </div>
-                    <?php endif; ?>
                 </div>
             </div>
 
