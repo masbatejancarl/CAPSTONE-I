@@ -138,6 +138,12 @@ requireRole('admin');
         if (target) target.textContent = value || 'Not available';
     }
 
+    function capitalizeFirstLetter(value) {
+        return typeof value === 'string' && value
+            ? value.charAt(0).toUpperCase() + value.slice(1)
+            : value;
+    }
+
     function renderSelectedDevice() {
         const device = devices.find(item => String(item.id) === String(selectedId));
         if (!device) {
@@ -153,13 +159,13 @@ requireRole('admin');
         setText('device_name', device.device_name);
         setText('user_name', device.user_name);
         setText('email', device.email);
-        setText('role', device.role);
+        setText('role', capitalizeFirstLetter(device.role));
         setText('ip_address', device.ip_address);
         setText('last_seen', device.last_seen || 'Never');
         setText('location_address', device.location_address);
         setText('location_updated_at', device.location_updated_at);
-        setText('vibration_intensity', device.vibration_intensity);
-        setText('sensitivity', device.sensitivity);
+        setText('vibration_intensity', capitalizeFirstLetter(device.vibration_intensity));
+        setText('sensitivity', capitalizeFirstLetter(device.sensitivity));
 
         if (device.online) {
             statusBadge.className = 'device-status-pill device-status-online';
