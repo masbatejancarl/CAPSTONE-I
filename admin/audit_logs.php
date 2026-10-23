@@ -169,8 +169,6 @@ $actionMeta = [
                     <option value="logout"       <?= $filterAction === 'logout'       ? 'selected' : '' ?>>Logout</option>
                     <option value="login_failed" <?= $filterAction === 'login_failed' ? 'selected' : '' ?>>Failed Login</option>
                     <option value="password_reset" <?= $filterAction === 'password_reset' ? 'selected' : '' ?>>Password Reset</option>
-                    <option value="DEVICE_CONNECTED" <?= $filterAction === 'DEVICE_CONNECTED' ? 'selected' : '' ?>>Device Connected</option>
-                    <option value="DEVICE_DISCONNECTED" <?= $filterAction === 'DEVICE_DISCONNECTED' ? 'selected' : '' ?>>Device Disconnected</option>
                 </select>
             </div>
             <div class="col-6 col-md-1">
