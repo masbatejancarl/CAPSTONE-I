@@ -88,8 +88,7 @@ requireRole('admin');
                     <div class="device-detail"><div class="device-detail-label">Latest Location</div><div class="device-detail-value" data-field="location_address"></div></div>
                     <div class="device-detail"><div class="device-detail-label">Location Updated</div><div class="device-detail-value" data-field="location_updated_at"></div></div>
                     <div class="device-detail"><div class="device-detail-label">Vibration Intensity</div><div class="device-detail-value" data-field="vibration_intensity"></div></div>
-                    <div class="device-detail"><div class="device-detail-label">Sensitivity</div><div class="device-detail-value" data-field="sensitivity"></div></div>
-                    <div class="device-detail"><div class="device-detail-label">Sound Threshold</div><div class="device-detail-value" data-field="sound_threshold"></div></div>
+                    <div class="device-detail"><div class="device-detail-label">Microphone Sensitivity</div><div class="device-detail-value" data-field="sensitivity"></div></div>
                 </div>
                 <div class="mt-4">
                     <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
@@ -161,7 +160,6 @@ requireRole('admin');
         setText('location_updated_at', device.location_updated_at);
         setText('vibration_intensity', device.vibration_intensity);
         setText('sensitivity', device.sensitivity);
-        setText('sound_threshold', device.sound_threshold);
 
         if (device.online) {
             statusBadge.className = 'device-status-pill device-status-online';

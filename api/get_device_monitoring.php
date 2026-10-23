@@ -13,7 +13,7 @@ try {
     $stmt = $pdo->query(
         "SELECT d.id, d.user_id, d.device_name, d.mac_address, d.ip_address,
                 d.is_on, d.last_seen, d.sensitivity, d.vibration_intensity,
-                d.sound_threshold, u.name AS user_name, u.email, u.role,
+                u.name AS user_name, u.email, u.role,
                 location.details AS location_details,
                 location.created_at AS location_updated_at
          FROM user_devices d
