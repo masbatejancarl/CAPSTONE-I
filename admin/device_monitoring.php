@@ -57,8 +57,6 @@ requireRole('admin');
                 </div>
                 <span class="sb-page-sub" id="device-last-refresh">Loading device status…</span>
             </div>
-            <p class="sb-page-sub mb-3">Connection-state audit events are detected while this page is open; brief changes between refreshes may not be recorded.</p>
-
             <section class="sb-card" aria-live="polite">
                 <div class="sb-section-header">
                     <div class="sb-section-title"><i class="bi bi-broadcast-pin"></i> Device Notifications</div>
