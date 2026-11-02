@@ -13,6 +13,10 @@ try {
     $stmt = $pdo->query(
         "SELECT d.id, d.user_id, d.device_name, d.mac_address, d.ip_address,
                 d.is_on, d.last_seen, d.sensitivity, d.vibration_intensity,
+                CASE
+                    WHEN d.is_on IS TRUE AND d.last_seen >= NOW() - INTERVAL '1 minute' THEN 1
+                    ELSE 0
+                END AS online,
                 u.name AS user_name, u.email, u.role,
                 location.details AS location_details,
                 location.created_at AS location_updated_at
@@ -30,17 +34,8 @@ try {
     );
     $devices = $stmt->fetchAll();
 
-    $stateStmt = $pdo->prepare(
-        "SELECT CASE
-                    WHEN is_on IS TRUE AND last_seen >= NOW() - INTERVAL '1 minute' THEN 1
-                    ELSE 0
-                END AS online
-         FROM user_devices WHERE id = ?"
-    );
-
     foreach ($devices as &$device) {
-        $stateStmt->execute([$device['id']]);
-        $device['online'] = (int)$stateStmt->fetchColumn() === 1;
+        $device['online'] = (int)$device['online'] === 1;
 
         $device['location_address'] = '';
         if (preg_match('/Updated location:\s*(.+)$/i', (string)($device['location_details'] ?? ''), $matches)) {
