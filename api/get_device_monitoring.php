@@ -12,7 +12,9 @@ try {
     $pdo->beginTransaction();
     $stmt = $pdo->query(
         "SELECT d.id, d.user_id, d.device_name, d.mac_address, d.ip_address,
-                d.is_on, d.last_seen, d.sensitivity, d.vibration_intensity,
+                d.is_on,
+                NULLIF(d.last_seen, TIMESTAMPTZ '1970-01-01 00:00:00+00') AS last_seen,
+                d.sensitivity, d.vibration_intensity,
                 CASE
                     WHEN d.is_on IS TRUE AND d.last_seen >= NOW() - INTERVAL '1 minute' THEN 1
                     ELSE 0
